@@ -11,6 +11,10 @@ import { JwtUtil } from "../../utils/jwt/JwtUtil.js";
 import { EmailUtil } from "../../utils/email/EmailUtil.js";
 
 export class AuthController {
+  static requiresEmailVerification() {
+    return process.env.REQUIRE_EMAIL_VERIFICATION === "true";
+  }
+
   /**
    * Register a new user
    * POST /auth/register
@@ -18,6 +22,7 @@ export class AuthController {
   static async register(req, res) {
     try {
       const { firstName, lastName, email, password, confirmPassword } = req.body;
+      const requiresEmailVerification = AuthController.requiresEmailVerification();
 
       // Validation
       if (!firstName || !lastName || !email || !password) {
@@ -49,32 +54,37 @@ export class AuthController {
         lastName,
         email: email.toLowerCase(),
         passwordHash,
-        status: "pending",
+        emailVerified: !requiresEmailVerification,
+        status: requiresEmailVerification ? "pending" : "active",
       });
 
       await user.save();
 
-      // Generate email verification token
-      const verificationToken = JwtUtil.generateEmailVerificationToken(user._id);
-      const verificationLink = `${process.env.APP_URL || "http://localhost:3000"}/verify-email?token=${verificationToken}`;
+      if (requiresEmailVerification) {
+        // Generate email verification token
+        const verificationToken = JwtUtil.generateEmailVerificationToken(user._id);
+        const verificationLink = `${process.env.APP_URL || "http://localhost:5173"}/verify-email?token=${verificationToken}`;
 
-      // Save verification token
-      await AuthToken.create({
-        user: user._id,
-        token: verificationToken,
-        type: "email_verification",
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      });
+        // Save verification token
+        await AuthToken.create({
+          user: user._id,
+          token: verificationToken,
+          type: "email_verification",
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        });
 
-      // Send verification email
-      try {
-        await EmailUtil.sendVerificationEmail(user.email, verificationLink);
-      } catch (emailError) {
-        console.error("Email send failed:", emailError);
+        // Send verification email
+        try {
+          await EmailUtil.sendVerificationEmail(user.email, verificationLink);
+        } catch (emailError) {
+          console.error("Email send failed:", emailError);
+        }
       }
 
       res.status(201).json({
-        message: "User registered successfully. Please verify your email.",
+        message: requiresEmailVerification
+          ? "User registered successfully. Please verify your email."
+          : "Account created successfully. You can now log in.",
         user: {
           id: user._id,
           email: user.email,

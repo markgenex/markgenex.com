@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   Activity,
@@ -32,7 +32,7 @@ import {
 import heroImage from './assets/hero.png'
 import { useAuth } from './context/auth-context'
 import { adminModules, navItems, roles, services } from './data/siteData'
-import { getLeadQueue, updateLeadQueue } from './lib/api'
+import { getLeadQueue, getLeads, updateLead as saveLead, updateLeadQueue } from './lib/api'
 import { cn } from './lib/utils'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
@@ -640,6 +640,24 @@ function AdminDashboard() {
   ])
   const [newPage, setNewPage] = useState('')
 
+  useEffect(() => {
+    let mounted = true
+
+    getLeads()
+      .then((serverLeads) => {
+        if (!mounted) return
+        setLeads(serverLeads)
+        updateLeadQueue(serverLeads)
+      })
+      .catch(() => {
+        if (mounted) setLeads(getLeadQueue())
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
   const metrics = useMemo(
     () => [
       { label: 'Queued leads', value: leads.length },
@@ -654,6 +672,16 @@ function AdminDashboard() {
     const next = leads.map((lead) => (lead.id === id ? { ...lead, ...patch } : lead))
     setLeads(next)
     updateLeadQueue(next)
+    saveLead(id, patch)
+      .then((savedLead) => {
+        if (!savedLead) return
+        setLeads((current) => {
+          const updated = current.map((lead) => (lead.id === id ? { ...lead, ...savedLead } : lead))
+          updateLeadQueue(updated)
+          return updated
+        })
+      })
+      .catch(() => {})
   }
 
   function addPage(event) {

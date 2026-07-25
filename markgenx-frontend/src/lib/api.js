@@ -1,6 +1,17 @@
+import axios from 'axios'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 const TOKEN_KEY = 'markgenx:tokens'
 const LEAD_QUEUE_KEY = 'markgenx:lead_queue'
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
 const endpointMap = {
   contact: ['/forms/contact-enquiries', '/leads'],
@@ -35,12 +46,73 @@ export function clearTokens() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
+function getApiError(error, fallback = 'Request failed') {
+  return error.response?.data?.error || error.response?.data?.message || error.message || fallback
+}
+
+async function refreshAccessToken() {
+  const tokens = getTokens()
+  if (!tokens?.refreshToken) {
+    throw new Error('Session expired')
+  }
+
+  try {
+    const { data } = await axios.post(
+      `${API_BASE_URL}/auth/refresh-token`,
+      { refreshToken: tokens.refreshToken },
+      {
+        timeout: 15000,
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    )
+    setTokens({ ...tokens, accessToken: data.accessToken })
+    return data.accessToken
+  } catch (error) {
+    clearTokens()
+    throw new Error(getApiError(error, 'Session expired'), { cause: error })
+  }
+}
+
+apiClient.interceptors.request.use((config) => {
+  const tokens = getTokens()
+  if (tokens?.accessToken) {
+    config.headers.Authorization = `Bearer ${tokens.accessToken}`
+  }
+  return config
+})
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+      originalRequest._retry = true
+      const accessToken = await refreshAccessToken()
+      originalRequest.headers.Authorization = `Bearer ${accessToken}`
+      return apiClient(originalRequest)
+    }
+
+    throw new Error(getApiError(error), { cause: error })
+  },
+)
+
 export function getLeadQueue() {
   return readJson(LEAD_QUEUE_KEY, [])
 }
 
 export function updateLeadQueue(leads) {
   writeJson(LEAD_QUEUE_KEY, leads)
+}
+
+export async function getLeads() {
+  const data = await request('/leads')
+  return data.leads || []
+}
+
+export async function updateLead(id, patch) {
+  const data = await request(`/leads/${id}`, { method: 'PATCH', body: patch })
+  return data.lead
 }
 
 export function getTrackingData() {
@@ -81,21 +153,12 @@ function trackLeadConversion(lead) {
 }
 
 async function request(path, options = {}) {
-  const tokens = getTokens()
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const { data } = await apiClient.request({
+    url: path,
     method: options.method || 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(tokens?.accessToken ? { Authorization: `Bearer ${tokens.accessToken}` } : {}),
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    data: options.body,
+    headers: options.headers,
   })
-
-  const data = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    throw new Error(data.error || data.message || 'Request failed')
-  }
   return data
 }
 
@@ -137,8 +200,9 @@ export async function submitLead(type, payload) {
   for (const endpoint of endpoints) {
     try {
       const result = await request(endpoint, { method: 'POST', body: lead })
-      trackLeadConversion(lead)
-      return { queued: false, lead, result }
+      const savedLead = result.lead || lead
+      trackLeadConversion(savedLead)
+      return { queued: false, lead: savedLead, result }
     } catch (error) {
       if (!/failed|not found|cannot|request/i.test(error.message)) {
         throw error
