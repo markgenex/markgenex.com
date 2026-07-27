@@ -24,7 +24,6 @@ const authTokenSchema = new mongoose.Schema(
     expiresAt: {
       type: Date,
       required: true,
-      index: { expireAfterSeconds: 0 },
     },
     isUsed: {
       type: Boolean,

@@ -16,7 +16,6 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: [true, "Email is required"],
-      unique: true,
       lowercase: true,
       match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Invalid email"],
     },
@@ -89,7 +88,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.index({ email: 1 });
+userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ status: 1 });
 userSchema.index({ createdAt: -1 });
 

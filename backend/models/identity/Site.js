@@ -14,14 +14,10 @@ const siteSchema = new mongoose.Schema(
     },
     domain: {
       type: String,
-      unique: true,
-      sparse: true,
       lowercase: true,
     },
     subdomain: {
       type: String,
-      unique: true,
-      sparse: true,
       lowercase: true,
     },
     description: String,
@@ -74,8 +70,8 @@ const siteSchema = new mongoose.Schema(
 );
 
 siteSchema.index({ organization: 1 });
-siteSchema.index({ domain: 1 });
-siteSchema.index({ subdomain: 1 });
+siteSchema.index({ domain: 1 }, { unique: true, sparse: true });
+siteSchema.index({ subdomain: 1 }, { unique: true, sparse: true });
 siteSchema.index({ status: 1 });
 
 export default mongoose.model("Site", siteSchema);

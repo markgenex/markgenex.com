@@ -18,8 +18,6 @@ const notificationTemplateSchema = new mongoose.Schema(
     },
     code: {
       type: String,
-      unique: true,
-      sparse: true,
       uppercase: true,
     },
     description: String,
@@ -69,6 +67,6 @@ const notificationTemplateSchema = new mongoose.Schema(
 );
 
 notificationTemplateSchema.index({ organization: 1, type: 1 });
-notificationTemplateSchema.index({ code: 1 });
+notificationTemplateSchema.index({ code: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model("NotificationTemplate", notificationTemplateSchema);

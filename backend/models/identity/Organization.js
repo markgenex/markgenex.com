@@ -11,8 +11,6 @@ const organizationSchema = new mongoose.Schema(
     },
     slug: {
       type: String,
-      unique: true,
-      sparse: true,
       lowercase: true,
       trim: true,
     },
@@ -86,7 +84,7 @@ const organizationSchema = new mongoose.Schema(
   }
 );
 
-organizationSchema.index({ slug: 1 });
+organizationSchema.index({ slug: 1 }, { unique: true, sparse: true });
 organizationSchema.index({ status: 1 });
 organizationSchema.index({ createdAt: -1 });
 

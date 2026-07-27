@@ -53,6 +53,7 @@ const formSubmissionSchema = new mongoose.Schema(
   {
     timestamps: true,
     collection: "form_submissions",
+    suppressReservedKeysWarning: true,
   }
 );
 

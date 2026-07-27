@@ -6,7 +6,6 @@ const clientProfileSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
     },
     company: {
       type: mongoose.Schema.Types.ObjectId,
@@ -42,7 +41,7 @@ const clientProfileSchema = new mongoose.Schema(
   }
 );
 
-clientProfileSchema.index({ user: 1 });
+clientProfileSchema.index({ user: 1 }, { unique: true });
 clientProfileSchema.index({ company: 1, status: 1 });
 
 export default mongoose.model("ClientProfile", clientProfileSchema);

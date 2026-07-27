@@ -6,7 +6,6 @@ const employeeProfileSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true,
     },
     organization: {
       type: mongoose.Schema.Types.ObjectId,
@@ -15,8 +14,6 @@ const employeeProfileSchema = new mongoose.Schema(
     },
     employeeId: {
       type: String,
-      unique: true,
-      sparse: true,
     },
     jobTitle: String,
     department: String,
@@ -73,7 +70,7 @@ const employeeProfileSchema = new mongoose.Schema(
 );
 
 employeeProfileSchema.index({ organization: 1, status: 1 });
-employeeProfileSchema.index({ user: 1 });
-employeeProfileSchema.index({ employeeId: 1 });
+employeeProfileSchema.index({ user: 1 }, { unique: true });
+employeeProfileSchema.index({ employeeId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model("EmployeeProfile", employeeProfileSchema);

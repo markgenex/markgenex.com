@@ -6,7 +6,6 @@ const siteSettingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Site",
       required: true,
-      unique: true,
     },
     seo: {
       metaTitle: String,
@@ -61,6 +60,6 @@ const siteSettingSchema = new mongoose.Schema(
   }
 );
 
-siteSettingSchema.index({ site: 1 });
+siteSettingSchema.index({ site: 1 }, { unique: true });
 
 export default mongoose.model("SiteSetting", siteSettingSchema);
