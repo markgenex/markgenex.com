@@ -40,7 +40,7 @@ import {
 import heroImage from './assets/hero.png'
 import { useAuth } from './context/auth-context'
 import { adminModules, navItems, roles, services } from './data/siteData'
-import { getLeadQueue, getLeads, getPublicIndustries, getServiceEnquiries, updateLead as saveLead, updateLeadQueue } from './lib/api'
+import { getLeadQueue, getLeads, getPublicIndustries, getPublicJobs, getServiceEnquiries, updateLead as saveLead, updateLeadQueue } from './lib/api'
 import { cn } from './lib/utils'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
@@ -53,6 +53,7 @@ import { SkeletonPanel } from './components/ui/skeleton'
 import { LeadForm } from './components/LeadForm'
 import { ServiceDiscussionForm } from './components/ServiceDiscussionForm'
 import { IndustryManager } from './components/IndustryManager'
+import { CareerManager } from './components/CareerManager'
 
 const phoneNumber = '+919876543210'
 const whatsappUrl = `https://wa.me/919876543210?text=${encodeURIComponent(
@@ -612,6 +613,7 @@ function ConsultationPage() {
 
 function CareersPage() {
   const [openRole, setOpenRole] = useState('senior-performance-marketing-manager')
+  const [jobs, setJobs] = useState([])
   const benefits = [
     { title: 'Remote-first', description: 'Work from anywhere in India. We have been distributed since 2020 and we mean it.', icon: House },
     { title: 'Learning budget', description: '₹40,000/year for courses, conferences, and books — no approval gauntlet.', icon: GraduationCap },
@@ -620,31 +622,10 @@ function CareersPage() {
     { title: 'Flexible hours', description: 'Core hours of 11am–4pm IST. The rest is yours to structure around your life.', icon: CalendarCheck },
     { title: 'Growth path', description: 'Quarterly career conversations and a transparent promotion framework.', icon: TrendingUp },
   ]
-  const jobs = [
-    {
-      id: 'senior-performance-marketing-manager',
-      title: 'Senior Performance Marketing Manager',
-      tags: ['Growth', 'Remote (India)', 'Full-time'],
-      description: 'We are looking for a senior performance marketing manager to join our Growth team. You will own meaningful work from day one, partner directly with clients, and have the autonomy to do your best work.',
-    },
-    { id: 'content-strategist', title: 'Content Strategist', tags: ['Content', 'Remote (India)', 'Full-time'], description: 'Shape content strategy, editorial systems, and high-quality narratives that connect audience needs with measurable business growth.' },
-    { id: 'brand-designer', title: 'Brand Designer', tags: ['Creative', 'Bangalore / Remote', 'Full-time'], description: 'Build distinctive brand systems and campaign creative for ambitious companies across digital and offline touchpoints.' },
-    { id: 'seo-lead', title: 'SEO Lead', tags: ['Content', 'Remote (India)', 'Full-time'], description: 'Lead technical and content-led search programs, turning customer intent into sustainable organic growth.' },
-  ]
+  useEffect(() => { getPublicJobs().then((items) => { setJobs(items); if (items.length) setOpenRole(items[0].id) }).catch(() => setJobs([])) }, [])
   const applicationEmail = (roleName) => {
     const subject = `Job Application – ${roleName}`
-    const body = [
-      `Hello MarkGenexes Hiring Team,`,
-      '',
-      `I would like to apply for the ${roleName} role.`,
-      '',
-      'Name:',
-      'Phone / Contact details:',
-      'Relevant experience:',
-      'Resume / Portfolio link:',
-      '',
-      'Thank you,',
-    ].join('\n')
+    const body = ['Hello MarkGenexes Hiring Team,', '', `I would like to apply for the ${roleName} role.`, '', 'Name:', 'Phone Number:', 'Experience:', 'Resume / Portfolio Link:', 'Message:', '', 'Thank you,'].join('\n')
     return `mailto:careers@markgenexs.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
   }
 
@@ -731,7 +712,7 @@ function CareersPage() {
                   <span className="font-bold text-ink sm:text-lg">{job.title}</span>
                   <span className="flex w-full items-center gap-2 sm:w-auto">
                     <span className="flex min-w-0 flex-1 flex-wrap gap-2 sm:justify-end">
-                      {job.tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
+                      {[job.department, `${job.workMode}${job.location ? ` (${job.location})` : ''}`, job.employmentType].filter(Boolean).map((tag) => <Badge key={tag}>{tag}</Badge>)}
                     </span>
                     <ChevronDown className={cn('size-5 shrink-0 text-primary transition-transform', expanded && 'rotate-180')} />
                   </span>
@@ -739,10 +720,7 @@ function CareersPage() {
                 {expanded ? (
                   <div id={`career-${job.id}`} className="animate-enter border-t border-border px-4 pb-5 pt-4 sm:px-5">
                     <p className="max-w-4xl text-sm leading-7 text-muted-foreground sm:text-base">{job.description}</p>
-                    <a
-                      className={cn(buttonVariants(), 'mt-5 w-full sm:w-auto')}
-                      href={applicationEmail(job.title)}
-                    >
+                    <a className={cn(buttonVariants(), 'mt-5 w-full sm:w-auto')} href={applicationEmail(job.title)}>
                       Apply for this role
                       <ArrowRight className="size-4" />
                     </a>
@@ -753,6 +731,7 @@ function CareersPage() {
           })}
         </div>
       </section>
+
 
     </PageShell>
   )
@@ -1343,6 +1322,7 @@ function AdminDashboard() {
         </section>
 
         <IndustryManager />
+        <CareerManager />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">

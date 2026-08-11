@@ -1,6 +1,7 @@
 import express from "express";
 import { LeadController } from "../controllers/leads/LeadController.js";
 import { IndustryController } from "../controllers/cms/IndustryController.js";
+import { CareerController } from "../controllers/careers/CareerController.js";
 import { isAuthenticated } from "../middlewares/auth/tokenMiddleware.js";
 
 const router = express.Router();
@@ -14,6 +15,15 @@ router.post("/v1/public/contact", LeadController.publicContact);
 router.post("/v1/public/consultations", LeadController.publicConsultation);
 router.post("/v1/public/service-enquiries", LeadController.publicServiceEnquiry);
 router.get("/v1/public/industries", IndustryController.publicList);
+router.get("/v1/public/jobs", CareerController.publicJobs);
+
+router.get("/v1/admin/jobs", isAuthenticated, CareerController.adminJobs);
+router.post("/v1/admin/jobs", isAuthenticated, CareerController.createJob);
+router.patch("/v1/admin/jobs/:id", isAuthenticated, CareerController.updateJob);
+router.delete("/v1/admin/jobs/:id", isAuthenticated, CareerController.deleteJob);
+router.get("/v1/admin/job-applications", isAuthenticated, CareerController.applications);
+router.post("/v1/admin/job-applications/sync", isAuthenticated, CareerController.syncMailbox);
+router.patch("/v1/admin/job-applications/:id", isAuthenticated, CareerController.updateApplication);
 
 router.get("/v1/admin/industries", isAuthenticated, IndustryController.adminList);
 router.post("/v1/admin/industries", isAuthenticated, IndustryController.create);

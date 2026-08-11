@@ -28,6 +28,16 @@ const jobOpeningSchema = new mongoose.Schema(
       type: String,
       enum: ["full-time", "part-time", "contract", "internship"],
     },
+    workMode: {
+      type: String,
+      enum: ["on-site", "remote", "hybrid"],
+      default: "remote",
+    },
+    experienceRequired: String,
+    salaryRange: String,
+    numberOfOpenings: { type: Number, default: 1 },
+    applicationDeadline: Date,
+    displayOrder: { type: Number, default: 0 },
     seniority: {
       type: String,
       enum: ["entry", "mid", "senior", "lead", "executive"],
@@ -65,5 +75,6 @@ const jobOpeningSchema = new mongoose.Schema(
 
 jobOpeningSchema.index({ site: 1, slug: 1 });
 jobOpeningSchema.index({ status: 1, publishedAt: -1 });
+jobOpeningSchema.index({ site: 1, displayOrder: 1 });
 
 export default mongoose.model("JobOpening", jobOpeningSchema);

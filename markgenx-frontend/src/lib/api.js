@@ -139,6 +139,15 @@ export async function deleteIndustry(id) {
   return request(`/v1/admin/industries/${id}`, { method: 'DELETE' })
 }
 
+export async function getPublicJobs() { const data = await request('/v1/public/jobs'); return data.jobs || [] }
+export async function getAdminJobs() { const data = await request('/v1/admin/jobs'); return data.jobs || [] }
+export async function createJob(payload) { const data = await request('/v1/admin/jobs', { method: 'POST', body: payload }); return data.job }
+export async function updateJob(id, payload) { const data = await request(`/v1/admin/jobs/${id}`, { method: 'PATCH', body: payload }); return data.job }
+export async function deleteJob(id) { return request(`/v1/admin/jobs/${id}`, { method: 'DELETE' }) }
+export async function getJobApplications(params = {}) { const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value)); const data = await request(`/v1/admin/job-applications${query.size ? `?${query}` : ''}`); return data.applications || [] }
+export async function updateJobApplication(id, status) { const data = await request(`/v1/admin/job-applications/${id}`, { method: 'PATCH', body: { status } }); return data.application }
+export async function syncCareerMailbox() { return request('/v1/admin/job-applications/sync', { method: 'POST' }) }
+
 export async function updateLead(id, patch) {
   const data = await request(`/leads/${id}`, { method: 'PATCH', body: patch })
   return data.lead

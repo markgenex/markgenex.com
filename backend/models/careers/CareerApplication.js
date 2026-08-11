@@ -22,8 +22,19 @@ const careerApplicationSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
     },
+    source: { type: String, enum: ["website", "email"], default: "website" },
+    inboundMessageId: { type: String, sparse: true },
+    emailSubject: String,
+    emailMessage: String,
+    emailAttachments: [
+      {
+        fileName: String,
+        contentType: String,
+        size: Number,
+        data: String,
+      },
+    ],
     currentPosition: String,
     currentCompany: String,
     experience: String,
@@ -31,15 +42,16 @@ const careerApplicationSchema = new mongoose.Schema(
     resume: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "MediaAsset",
-      required: true,
     },
+    resumeData: String,
+    resumeFileName: String,
     portfolio: String,
     linkedinProfile: String,
     githubProfile: String,
     status: {
       type: String,
-      enum: ["submitted", "reviewed", "shortlisted", "interview", "rejected", "withdrawn"],
-      default: "submitted",
+      enum: ["new", "reviewed", "shortlisted", "interview", "selected", "rejected", "withdrawn"],
+      default: "new",
     },
     rating: {
       type: Number,
@@ -63,5 +75,6 @@ const careerApplicationSchema = new mongoose.Schema(
 careerApplicationSchema.index({ jobOpening: 1, status: 1 });
 careerApplicationSchema.index({ email: 1 });
 careerApplicationSchema.index({ status: 1, appliedAt: -1 });
+careerApplicationSchema.index({ inboundMessageId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model("CareerApplication", careerApplicationSchema);
