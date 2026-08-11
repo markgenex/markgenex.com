@@ -5,10 +5,10 @@ import {
   ArrowRight,
   ArrowUpRight,
   BarChart3,
-  BriefcaseBusiness,
   Building2,
   CalendarCheck,
   Check,
+  ChevronDown,
   ChevronRight,
   Code2,
   Download,
@@ -611,28 +611,149 @@ function ConsultationPage() {
 }
 
 function CareersPage() {
+  const [openRole, setOpenRole] = useState('senior-performance-marketing-manager')
+  const benefits = [
+    { title: 'Remote-first', description: 'Work from anywhere in India. We have been distributed since 2020 and we mean it.', icon: House },
+    { title: 'Learning budget', description: '₹40,000/year for courses, conferences, and books — no approval gauntlet.', icon: GraduationCap },
+    { title: 'Health & wellness', description: 'Family health insurance, mental health support, and a quarterly wellness stipend.', icon: HeartPulse },
+    { title: 'Real ownership', description: 'You own outcomes, not tasks. We hire seniors and trust them to figure out the how.', icon: ShieldCheck },
+    { title: 'Flexible hours', description: 'Core hours of 11am–4pm IST. The rest is yours to structure around your life.', icon: CalendarCheck },
+    { title: 'Growth path', description: 'Quarterly career conversations and a transparent promotion framework.', icon: TrendingUp },
+  ]
+  const jobs = [
+    {
+      id: 'senior-performance-marketing-manager',
+      title: 'Senior Performance Marketing Manager',
+      tags: ['Growth', 'Remote (India)', 'Full-time'],
+      description: 'We are looking for a senior performance marketing manager to join our Growth team. You will own meaningful work from day one, partner directly with clients, and have the autonomy to do your best work.',
+    },
+    { id: 'content-strategist', title: 'Content Strategist', tags: ['Content', 'Remote (India)', 'Full-time'], description: 'Shape content strategy, editorial systems, and high-quality narratives that connect audience needs with measurable business growth.' },
+    { id: 'brand-designer', title: 'Brand Designer', tags: ['Creative', 'Bangalore / Remote', 'Full-time'], description: 'Build distinctive brand systems and campaign creative for ambitious companies across digital and offline touchpoints.' },
+    { id: 'seo-lead', title: 'SEO Lead', tags: ['Content', 'Remote (India)', 'Full-time'], description: 'Lead technical and content-led search programs, turning customer intent into sustainable organic growth.' },
+  ]
+  const applicationEmail = (roleName) => {
+    const subject = `Job Application – ${roleName}`
+    const body = [
+      `Hello MarkGenexes Hiring Team,`,
+      '',
+      `I would like to apply for the ${roleName} role.`,
+      '',
+      'Name:',
+      'Phone / Contact details:',
+      'Relevant experience:',
+      'Resume / Portfolio link:',
+      '',
+      'Thank you,',
+    ].join('\n')
+    return `mailto:careers@markgenexs.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  }
+
   return (
     <PageShell
       eyebrow="Careers"
-      title="Join the team building modern growth systems."
-      description="MarkGenexes is hiring people who care about measurable work, clean execution, and calm client communication."
-      cta="Apply for a Job"
+      title="Do meaningful work with people who trust you."
+      description="Join a remote-first team of senior professionals building measurable growth systems for ambitious businesses."
+      cta="View Open Positions"
+      ctaHref="#open-positions"
     >
-      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-        <div className="grid gap-4 sm:grid-cols-2">
-          {['Performance Marketer', 'SEO Specialist', 'Creative Strategist', 'Frontend Developer'].map((role) => (
-            <article key={role} className="surface-card interactive-card rounded-lg p-5">
-              <BriefcaseBusiness className="size-5 text-primary" />
-              <h2 className="mt-3 text-xl font-bold text-ink">{role}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">Full-time, hybrid-friendly, growth-focused role.</p>
-              <Button variant="outline" size="sm" className="mt-4">
-                Apply for a Job
-              </Button>
-            </article>
+      <section className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-center lg:gap-12">
+        <div>
+          <Badge>Why MarkGenexes</Badge>
+          <h2 className="mt-4 max-w-3xl text-3xl font-black leading-tight text-ink sm:text-4xl lg:text-5xl">
+            Senior team. Real autonomy. Outcomes over politics.
+          </h2>
+          <div className="mt-5 grid max-w-3xl gap-4 text-sm leading-7 text-muted-foreground sm:text-base">
+            <p>
+              We have spent twelve years building the kind of agency we would want to work at — one where you are trusted to do your best work, surrounded by people who raise your bar, and measured by the impact you create for clients.
+            </p>
+            <p>
+              No timesheets. No layers of approval for a tweet. Just clear goals, great teammates, and the freedom to figure out how to get there.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          {[
+            ['60', 'Team members'],
+            ['4.9/5', 'Employee rating'],
+            ['3.1 yrs', 'Avg. tenure'],
+            ['6', 'Cities'],
+          ].map(([value, label]) => (
+            <div key={label} className="surface-card interactive-card grid min-h-32 place-items-center rounded-lg p-4 text-center sm:min-h-40 sm:p-5">
+              <div>
+                <p className="text-3xl font-black text-primary sm:text-4xl">{value}</p>
+                <p className="mt-2 text-xs font-semibold text-muted-foreground sm:text-sm">{label}</p>
+              </div>
+            </div>
           ))}
         </div>
-        <LeadForm type="career" title="Career Application" compact />
-      </div>
+      </section>
+
+      <section className="pt-14 lg:pt-20">
+        <div className="text-center">
+          <Badge>Benefits & Perks</Badge>
+          <h2 className="mt-4 text-3xl font-black text-ink sm:text-4xl">Designed for senior professionals</h2>
+        </div>
+        <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {benefits.map((benefit) => {
+            const Icon = benefit.icon
+            return (
+              <article key={benefit.title} className="surface-card interactive-card rounded-lg p-5 sm:p-6">
+                <span className="grid size-10 place-items-center rounded-md bg-primary/10 text-primary"><Icon className="size-5" /></span>
+                <h3 className="mt-4 text-xl font-bold text-ink">{benefit.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{benefit.description}</p>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <section id="open-positions" className="scroll-mt-24 pt-14 lg:pt-20">
+        <div className="mx-auto max-w-3xl text-center">
+          <Badge>Open Positions</Badge>
+          <h2 className="mt-4 text-3xl font-black text-ink sm:text-4xl">Come build with us</h2>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
+            Don&apos;t see a perfect fit? Email <a className="font-bold text-primary hover:underline" href="mailto:careers@markgenexs.com">careers@markgenexs.com</a> — we are always interested in exceptional people.
+          </p>
+        </div>
+
+        <div className="mx-auto mt-8 grid max-w-5xl gap-3">
+          {jobs.map((job) => {
+            const expanded = openRole === job.id
+            return (
+              <article key={job.id} className="surface-card overflow-hidden rounded-lg">
+                <button
+                  type="button"
+                  className="flex w-full flex-col gap-3 p-4 text-left transition hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between sm:p-5"
+                  onClick={() => setOpenRole(expanded ? null : job.id)}
+                  aria-expanded={expanded}
+                  aria-controls={`career-${job.id}`}
+                >
+                  <span className="font-bold text-ink sm:text-lg">{job.title}</span>
+                  <span className="flex w-full items-center gap-2 sm:w-auto">
+                    <span className="flex min-w-0 flex-1 flex-wrap gap-2 sm:justify-end">
+                      {job.tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
+                    </span>
+                    <ChevronDown className={cn('size-5 shrink-0 text-primary transition-transform', expanded && 'rotate-180')} />
+                  </span>
+                </button>
+                {expanded ? (
+                  <div id={`career-${job.id}`} className="animate-enter border-t border-border px-4 pb-5 pt-4 sm:px-5">
+                    <p className="max-w-4xl text-sm leading-7 text-muted-foreground sm:text-base">{job.description}</p>
+                    <a
+                      className={cn(buttonVariants(), 'mt-5 w-full sm:w-auto')}
+                      href={applicationEmail(job.title)}
+                    >
+                      Apply for this role
+                      <ArrowRight className="size-4" />
+                    </a>
+                  </div>
+                ) : null}
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
     </PageShell>
   )
 }
@@ -663,7 +784,7 @@ function PartnerPage() {
   )
 }
 
-function PageShell({ eyebrow, title, description, cta, children }) {
+function PageShell({ eyebrow, title, description, cta, ctaHref = '/consultation', children }) {
   return (
     <>
       <section className="grid-pattern border-b border-border bg-[linear-gradient(180deg,#ffffff_0%,#eef2f6_100%)]">
@@ -672,10 +793,11 @@ function PageShell({ eyebrow, title, description, cta, children }) {
           <h1 className="mt-4 max-w-4xl text-4xl font-black leading-tight text-ink sm:text-5xl">{title}</h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">{description}</p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <Link className={buttonVariants()} to="/consultation">
-              {cta}
-              <ArrowRight className="size-4" />
-            </Link>
+            {ctaHref.startsWith('#') ? (
+              <a className={buttonVariants()} href={ctaHref}>{cta}<ArrowRight className="size-4" /></a>
+            ) : (
+              <Link className={buttonVariants()} to={ctaHref}>{cta}<ArrowRight className="size-4" /></Link>
+            )}
             <a className={buttonVariants({ variant: 'outline' })} href={whatsappUrl} target="_blank" rel="noreferrer">
               WhatsApp
             </a>

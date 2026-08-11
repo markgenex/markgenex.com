@@ -23,7 +23,7 @@ const formSubmissionSchema = new mongoose.Schema(
     idempotencyKey: String,
     submissionType: {
       type: String,
-      enum: ["lead", "contact", "consultation", "service_enquiry", "admin"],
+      enum: ["lead", "contact", "consultation", "service_enquiry", "career", "partner", "admin"],
       default: "lead",
     },
     data: mongoose.Schema.Types.Mixed,
