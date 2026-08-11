@@ -10,10 +10,17 @@ import {
   CalendarCheck,
   Check,
   ChevronRight,
+  Code2,
   Download,
   Eye,
+  Factory,
   Gauge,
+  GraduationCap,
+  HeartPulse,
+  Hotel,
+  House,
   Inbox,
+  Landmark,
   LayoutDashboard,
   LineChart,
   LogOut,
@@ -23,6 +30,7 @@ import {
   Phone,
   Plus,
   ShieldCheck,
+  ShoppingBag,
   Sparkles,
   TrendingUp,
   UserRound,
@@ -32,7 +40,7 @@ import {
 import heroImage from './assets/hero.png'
 import { useAuth } from './context/auth-context'
 import { adminModules, navItems, roles, services } from './data/siteData'
-import { getLeadQueue, getLeads, updateLead as saveLead, updateLeadQueue } from './lib/api'
+import { getLeadQueue, getLeads, getPublicIndustries, getServiceEnquiries, updateLead as saveLead, updateLeadQueue } from './lib/api'
 import { cn } from './lib/utils'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
@@ -43,11 +51,14 @@ import { EmptyState } from './components/ui/empty-state'
 import { Field, Input, Select, Textarea } from './components/ui/field'
 import { SkeletonPanel } from './components/ui/skeleton'
 import { LeadForm } from './components/LeadForm'
+import { ServiceDiscussionForm } from './components/ServiceDiscussionForm'
+import { IndustryManager } from './components/IndustryManager'
 
 const phoneNumber = '+919876543210'
 const whatsappUrl = `https://wa.me/919876543210?text=${encodeURIComponent(
   'Hi MarkGenexes, I want to discuss growth and marketing services.',
 )}`
+const industryIconMap = { Building2, Code2, Factory, GraduationCap, HeartPulse, Hotel, House, Landmark, ShoppingBag }
 
 function Layout() {
   return (
@@ -57,6 +68,7 @@ function Layout() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/industries" element={<IndustriesPage />} />
           <Route path="/consultation" element={<ConsultationPage />} />
           <Route path="/careers" element={<CareersPage />} />
           <Route path="/partner" element={<PartnerPage />} />
@@ -372,39 +384,201 @@ function AdminPreview() {
 }
 
 function ServicesPage() {
+  const [selectedService, setSelectedService] = useState(null)
+
+  return (
+    <>
+      <PageShell
+        eyebrow="Services"
+        title="Premium growth services for acquisition, conversion, and automation."
+        description="Choose a focused service or combine multiple disciplines into one campaign operating system."
+        cta="Request a Proposal"
+      >
+        <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+          <div className="grid gap-4">
+            {services.map((service) => {
+              const Icon = service.icon
+              return (
+                <article key={service.slug} className="surface-card interactive-card rounded-lg p-5">
+                  <div className="flex gap-4">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                      <Icon className="size-5" />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-bold text-ink">{service.title}</h2>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{service.description}</p>
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                        <Link className={cn(buttonVariants({ size: 'sm' }), 'w-full whitespace-nowrap sm:w-44')} to="/consultation">
+                          Talk to an Expert
+                          <ArrowRight className="size-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full whitespace-nowrap sm:w-44')}
+                          onClick={() => setSelectedService(service)}
+                          aria-label={`Discuss ${service.title}`}
+                        >
+                          <MessageSquareText className="size-4" />
+                          Discuss the Service
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+          <div id="service-enquiry" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
+            <LeadForm type="service" title="Service Enquiry" compact />
+          </div>
+        </div>
+      </PageShell>
+      <Dialog
+        open={Boolean(selectedService)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedService(null)
+        }}
+        title="Request a proposal"
+        description="Share a few details and our team will follow up with a tailored next step."
+        className="sm:max-w-3xl"
+      >
+        {selectedService ? (
+          <ServiceDiscussionForm
+            key={selectedService.slug}
+            serviceTitle={selectedService.title}
+            serviceSlug={selectedService.slug}
+          />
+        ) : null}
+      </Dialog>
+    </>
+  )
+}
+
+function IndustriesPage() {
+  const [managedIndustries, setManagedIndustries] = useState(null)
+
+  useEffect(() => {
+    let mounted = true
+    getPublicIndustries()
+      .then((items) => {
+        if (mounted) setManagedIndustries(items)
+      })
+      .catch(() => {
+        if (mounted) setManagedIndustries(null)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const displayedIndustries = managedIndustries || []
+
   return (
     <PageShell
-      eyebrow="Services"
-      title="Premium growth services for acquisition, conversion, and automation."
-      description="Choose a focused service or combine multiple disciplines into one campaign operating system."
-      cta="Request a Proposal"
+      eyebrow="Industries"
+      title="Industry expertise built around your customer journey."
+      description="We combine market context, acquisition strategy, creative, technology, and lead operations to solve the growth challenges specific to your industry."
+      cta="Talk to an Industry Specialist"
     >
-      <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-        <div className="grid gap-4">
-          {services.map((service) => {
-            const Icon = service.icon
-            return (
-              <article key={service.slug} className="surface-card interactive-card rounded-lg p-5">
-                <div className="flex gap-4">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
-                    <Icon className="size-5" />
-                  </span>
-                  <div>
-                    <h2 className="text-xl font-bold text-ink">{service.title}</h2>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{service.description}</p>
-                    <Link className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-primary" to="/consultation">
-                      Talk to an Expert
+      <div className="grid gap-6">
+        {displayedIndustries.map((industry, index) => {
+          const Icon = industryIconMap[industry.icon] || Building2
+          const industryTitle = industry.title || industry.name
+          const imageSource = industry.mainImage || ''
+          return (
+            <article
+              id={industry.slug}
+              key={industry.slug}
+              className="surface-card interactive-card group scroll-mt-24 overflow-hidden rounded-lg"
+            >
+              <div className="grid min-w-0 lg:grid-cols-[0.8fr_1.2fr]">
+                <div className="grid-pattern relative flex min-h-56 flex-col justify-between overflow-hidden bg-[radial-gradient(circle_at_80%_15%,rgba(245,158,11,0.2),transparent_14rem),linear-gradient(135deg,#101828,#146c5f)] p-5 text-white sm:min-h-64 sm:p-7 lg:min-h-full">
+                  {imageSource ? (
+                    <>
+                      <img
+                        src={imageSource}
+                        alt={industry.imageAlt || `${industryTitle} industry`}
+                        className="absolute inset-4 h-[calc(100%-2rem)] w-[calc(100%-2rem)] rounded-lg object-cover shadow-premium transition duration-500 group-hover:scale-[1.01] sm:inset-5 sm:h-[calc(100%-2.5rem)] sm:w-[calc(100%-2.5rem)]"
+                        loading="eager"
+                      />
+                      <div className="absolute inset-4 rounded-lg bg-gradient-to-t from-ink/55 via-transparent to-ink/20 sm:inset-5" />
+                    </>
+                  ) : null}
+                  <div className="relative z-[1] flex items-center justify-between gap-3">
+                    <Badge className="border-white/15 bg-white/10 text-white">{industry.industryNumber || String(index + 1).padStart(2, '0')}</Badge>
+                    <span className="grid size-11 place-items-center rounded-md bg-white/10 text-accent backdrop-blur-sm">
+                      <Icon className="size-6" />
+                    </span>
+                  </div>
+                  {!imageSource ? (
+                    <>
+                      <div className="relative mt-12">
+                        <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Growth systems for</p>
+                        <h2 className="mt-2 max-w-md text-3xl font-black leading-tight sm:text-4xl">{industryTitle}</h2>
+                      </div>
+                      <div className="pointer-events-none absolute -bottom-16 -right-12 size-52 rounded-full border border-white/10 bg-white/5" />
+                    </>
+                  ) : null}
+                </div>
+
+                <div className="min-w-0 p-5 sm:p-7 lg:p-8">
+                  <h2 className="text-2xl font-black text-ink sm:text-3xl">{industryTitle}</h2>
+                  <p className="mt-3 text-sm leading-7 text-muted-foreground sm:text-base">{industry.description}</p>
+
+                  <div className="mt-6 grid gap-6 md:grid-cols-2">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wide text-muted-foreground">Challenges we solve</h3>
+                      <ul className="mt-3 grid gap-3">
+                        {industry.challenges.map((challenge, challengeIndex) => (
+                          <li key={challenge.text || challenge || challengeIndex} className="flex items-start gap-2 text-sm leading-6 text-ink">
+                            <ArrowRight className="mt-1 size-4 shrink-0 text-accent" />
+                            <span>{challenge.text || challenge}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wide text-muted-foreground">Outcomes we deliver</h3>
+                      <ul className="mt-3 grid gap-3">
+                        {industry.outcomes.map((outcome, outcomeIndex) => (
+                          <li
+                            key={outcome.text || outcome || outcomeIndex}
+                            className={cn(
+                              'flex items-start gap-2 text-sm leading-6',
+                              outcome.highlighted === false ? 'text-ink' : 'font-bold text-primary',
+                            )}
+                          >
+                            {outcome.highlighted === false ? <ArrowRight className="mt-1 size-4 shrink-0 text-accent" /> : <Check className="mt-1 size-4 shrink-0" />}
+                            <span>{outcome.text || outcome}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/^https?:\/\//i.test(industry.ctaLink || '') ? (
+                    <a className={cn(buttonVariants({ variant: 'outline' }), 'mt-7 w-full sm:w-auto')} href={industry.ctaLink} target="_blank" rel="noreferrer">
+                      {industry.ctaText || 'Talk to an Industry Specialist'}
+                      <ArrowRight className="size-4" />
+                    </a>
+                  ) : (
+                    <Link className={cn(buttonVariants({ variant: 'outline' }), 'mt-7 w-full sm:w-auto')} to={industry.ctaLink || '/consultation'}>
+                      {industry.ctaText || 'Talk to an Industry Specialist'}
                       <ArrowRight className="size-4" />
                     </Link>
-                  </div>
+                  )}
                 </div>
-              </article>
-            )
-          })}
-        </div>
-        <div className="lg:sticky lg:top-24 lg:self-start">
-          <LeadForm type="service" title="Service Enquiry" compact />
-        </div>
+              </div>
+            </article>
+          )
+        })}
+        {!displayedIndustries.length ? (
+          <EmptyState
+            icon={Building2}
+            title="Industry profiles are being updated"
+            description="Published industry content will appear here soon."
+          />
+        ) : null}
       </div>
     </PageShell>
   )
@@ -632,6 +806,10 @@ function ProtectedRoute({ children }) {
 function AdminDashboard() {
   const { user, logout } = useAuth()
   const [leads, setLeads] = useState(() => getLeadQueue())
+  const [serviceEnquiries, setServiceEnquiries] = useState(() =>
+    getLeadQueue().filter((lead) => ['service', 'service_enquiry'].includes(lead.type)),
+  )
+  const [serviceFilter, setServiceFilter] = useState('all')
   const [selectedLead, setSelectedLead] = useState(null)
   const [pages, setPages] = useState([
     { id: 'home', title: 'Home', status: 'published', owner: 'Marketing Manager' },
@@ -649,6 +827,16 @@ function AdminDashboard() {
         setLeads(serverLeads)
         updateLeadQueue(serverLeads)
       })
+
+    getServiceEnquiries()
+      .then((enquiries) => {
+        if (mounted) setServiceEnquiries(enquiries)
+      })
+      .catch(() => {
+        if (mounted) {
+          setServiceEnquiries(getLeadQueue().filter((lead) => ['service', 'service_enquiry'].includes(lead.type)))
+        }
+      })
       .catch(() => {
         if (mounted) setLeads(getLeadQueue())
       })
@@ -661,11 +849,37 @@ function AdminDashboard() {
   const metrics = useMemo(
     () => [
       { label: 'Queued leads', value: leads.length },
-      { label: 'Service enquiries', value: leads.filter((lead) => lead.type === 'service').length },
+      { label: 'Service enquiries', value: serviceEnquiries.length },
       { label: 'Career applications', value: leads.filter((lead) => lead.type === 'career').length },
       { label: 'Published pages', value: pages.filter((page) => page.status === 'published').length },
     ],
-    [leads, pages],
+    [leads, pages, serviceEnquiries],
+  )
+
+  const serviceOptions = useMemo(() => {
+    const options = new Map(services.map((service) => [service.slug, { ...service, value: service.slug }]))
+
+    serviceEnquiries.forEach((enquiry) => {
+      const slug = enquiry.serviceSlug || enquiry.requiredService
+      if (!slug) return
+      options.set(slug, {
+        slug,
+        title: enquiry.requiredService || slug,
+        value: enquiry.serviceId || slug,
+      })
+    })
+
+    return [...options.values()].sort((a, b) => a.title.localeCompare(b.title))
+  }, [serviceEnquiries])
+
+  const filteredServiceEnquiries = useMemo(
+    () =>
+      serviceFilter === 'all'
+        ? serviceEnquiries
+        : serviceEnquiries.filter(
+            (enquiry) => enquiry.serviceId === serviceFilter || enquiry.serviceSlug === serviceFilter,
+          ),
+    [serviceEnquiries, serviceFilter],
   )
 
   function updateLead(id, patch) {
@@ -744,59 +958,160 @@ function AdminDashboard() {
         })}
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-        <section className="surface-card rounded-lg p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-ink">Website content</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Pages, services, blogs, case studies, and media.</p>
+      <section className="surface-card mt-6 rounded-lg p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="grid size-9 place-items-center rounded-md bg-primary/10 text-primary">
+                <MessageSquareText className="size-4" />
+              </span>
+              <h2 className="text-xl font-bold text-ink">Service Enquiries</h2>
             </div>
-            <Eye className="size-5 text-primary" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Review customer requirements grouped by their linked service.
+            </p>
           </div>
-          <form onSubmit={addPage} className="mt-4 flex gap-2">
-            <Input value={newPage} onChange={(event) => setNewPage(event.target.value)} placeholder="New page title" />
-            <Button type="submit" size="icon" aria-label="Add page">
-              <Plus className="size-4" />
-            </Button>
-          </form>
-          <div className="mt-4 grid gap-3">
-            {pages.map((page) => (
-              <div key={page.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-white p-3 transition hover:border-primary/30 hover:shadow-soft">
-                <div>
-                  <p className="text-sm font-bold text-ink">{page.title}</p>
-                  <p className="text-xs text-muted-foreground">{page.owner}</p>
-                </div>
-                <Select
-                  className="w-36"
-                  value={page.status}
-                  onChange={(event) =>
-                    setPages((current) =>
-                      current.map((item) => (item.id === page.id ? { ...item, status: event.target.value } : item)),
-                    )
-                  }
-                >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
-                </Select>
-              </div>
-            ))}
-          </div>
-        </section>
+          <Field label="Filter by service" className="w-full sm:w-72">
+            <Select value={serviceFilter} onChange={(event) => setServiceFilter(event.target.value)}>
+              <option value="all">All services ({serviceEnquiries.length})</option>
+              {serviceOptions.map((service) => (
+                <option key={service.slug} value={service.value}>
+                  {service.title}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        </div>
 
-        <section className="surface-card rounded-lg p-5">
+        {filteredServiceEnquiries.length ? (
+          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+            {filteredServiceEnquiries.map((enquiry) => {
+              const assignedName =
+                typeof enquiry.assignedTo === 'object'
+                  ? [enquiry.assignedTo?.firstName, enquiry.assignedTo?.lastName].filter(Boolean).join(' ')
+                  : enquiry.assignedTo
+
+              return (
+                <article key={enquiry.submissionId || enquiry.id} className="rounded-lg border border-border bg-white p-4 shadow-sm transition hover:border-primary/30 hover:shadow-soft">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-bold text-ink">{enquiry.name || 'Unnamed customer'}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {enquiry.companyName || 'Company not provided'}
+                      </p>
+                    </div>
+                    <Badge className="w-fit border-primary/15 bg-primary/5 text-primary">
+                      {enquiry.requiredService || 'Service enquiry'}
+                    </Badge>
+                  </div>
+
+                  <p className="mt-4 line-clamp-3 text-sm leading-6 text-ink">
+                    {enquiry.message || enquiry.businessRequirement || 'No requirements provided.'}
+                  </p>
+
+                  <div className="mt-4 grid gap-2 text-xs sm:grid-cols-2">
+                    <p className="rounded-md bg-muted/60 px-3 py-2 text-muted-foreground">
+                      <span className="font-bold text-ink">Email:</span> {enquiry.email || 'Not provided'}
+                    </p>
+                    <p className="rounded-md bg-muted/60 px-3 py-2 text-muted-foreground">
+                      <span className="font-bold text-ink">Phone:</span> {enquiry.phone || 'Not provided'}
+                    </p>
+                    <p className="rounded-md bg-muted/60 px-3 py-2 text-muted-foreground">
+                      <span className="font-bold text-ink">Budget:</span> {enquiry.budgetRange || 'Not provided'}
+                    </p>
+                    <p className="rounded-md bg-muted/60 px-3 py-2 text-muted-foreground">
+                      <span className="font-bold text-ink">Owner:</span> {assignedName || 'Unassigned'}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-3 border-t border-border pt-3 text-xs sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge>{enquiry.leadStatus || 'new'}</Badge>
+                      <span className="text-muted-foreground">
+                        {enquiry.enquiredAt ? new Date(enquiry.enquiredAt).toLocaleString() : 'Date unavailable'}
+                      </span>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedLead(enquiry)}>
+                      View details
+                    </Button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="mt-5">
+            <EmptyState
+              icon={MessageSquareText}
+              title="No enquiries for this service"
+              description="New submissions from the Discuss the Service form will appear here."
+            />
+          </div>
+        )}
+      </section>
+
+      <div className="mt-6 grid gap-6">
+        <section className="surface-card min-w-0 rounded-lg p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="text-xl font-bold text-ink">Lead inbox</h2>
               <p className="mt-1 text-sm text-muted-foreground">Assignments, statuses, notes, campaign source, and export.</p>
             </div>
-            <Button variant="outline" onClick={exportLeads} disabled={!leads.length}>
+            <Button className="w-full sm:w-auto" variant="outline" onClick={exportLeads} disabled={!leads.length}>
               <Download className="size-4" />
               Export
             </Button>
           </div>
-          <div className="mt-4 overflow-x-auto rounded-lg border border-border">
-            {leads.length ? (
-              <table className="min-w-[920px] text-left text-sm">
+          {leads.length ? (
+            <>
+              <div className="mt-4 grid gap-3 lg:hidden">
+                {leads.map((lead) => (
+                  <article key={lead.id} className="rounded-lg border border-border bg-white p-4 shadow-sm">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-ink">{lead.name || 'Unnamed lead'}</p>
+                        <p className="mt-1 break-words text-xs text-muted-foreground">{lead.email || lead.phone}</p>
+                      </div>
+                      <Badge className="w-fit">{lead.leadSource || 'direct'}</Badge>
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-md bg-muted/60 p-3">
+                        <p className="text-xs font-bold uppercase text-muted-foreground">Service</p>
+                        <p className="mt-1 break-words text-sm font-semibold text-ink">{lead.requiredService || lead.type}</p>
+                      </div>
+                      <Field label="Status">
+                        <Select value={lead.leadStatus} onChange={(event) => updateLead(lead.id, { leadStatus: event.target.value })}>
+                          <option value="new">New</option>
+                          <option value="contacted">Contacted</option>
+                          <option value="qualified">Qualified</option>
+                          <option value="won">Won</option>
+                          <option value="lost">Lost</option>
+                        </Select>
+                      </Field>
+                      <Field label="Assigned owner">
+                        <Input
+                          value={typeof lead.assignedTo === 'string' ? lead.assignedTo : ''}
+                          onChange={(event) => updateLead(lead.id, { assignedTo: event.target.value })}
+                          placeholder="Sales owner"
+                        />
+                      </Field>
+                      <Field label="Notes">
+                        <Textarea
+                          className="min-h-20"
+                          value={lead.noteText || ''}
+                          onChange={(event) => updateLead(lead.id, { noteText: event.target.value })}
+                          placeholder="Lead notes"
+                        />
+                      </Field>
+                    </div>
+                    <Button className="mt-3 w-full sm:w-auto" type="button" variant="outline" size="sm" onClick={() => setSelectedLead(lead)}>
+                      View details
+                    </Button>
+                  </article>
+                ))}
+              </div>
+              <div className="mt-4 hidden overflow-x-auto rounded-lg border border-border lg:block">
+              <table className="w-full min-w-[920px] text-left text-sm">
                 <thead className="border-b border-border bg-muted/70 text-xs uppercase text-muted-foreground">
                   <tr>
                     {['Lead', 'Service', 'Source', 'Status', 'Assigned', 'Notes', ''].map((heading) => (
@@ -850,15 +1165,62 @@ function AdminDashboard() {
                   ))}
                 </tbody>
               </table>
-            ) : (
+              </div>
+            </>
+          ) : (
+            <div className="mt-4 rounded-lg border border-border">
               <EmptyState
                 icon={Inbox}
                 title="No local leads yet"
                 description="Submitted forms will appear here if the backend lead routes are unavailable."
               />
-            )}
+            </div>
+          )}
+        </section>
+
+        <section className="surface-card min-w-0 rounded-lg p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold text-ink">Website content</h2>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">Pages, services, blogs, case studies, and media.</p>
+            </div>
+            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+              <Eye className="size-4" />
+            </span>
+          </div>
+          <form onSubmit={addPage} className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <Input className="min-w-0" value={newPage} onChange={(event) => setNewPage(event.target.value)} placeholder="New page title" />
+            <Button className="w-full shrink-0 sm:w-auto" type="submit" aria-label="Add page">
+              <Plus className="size-4" />
+              Add page
+            </Button>
+          </form>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {pages.map((page) => (
+              <div key={page.id} className="flex min-w-0 flex-col gap-3 rounded-md border border-border bg-white p-3 transition hover:border-primary/30 hover:shadow-soft">
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-bold text-ink">{page.title}</p>
+                  <p className="mt-1 break-words text-xs text-muted-foreground">{page.owner}</p>
+                </div>
+                <Select
+                  className="w-full"
+                  aria-label={`${page.title} publication status`}
+                  value={page.status}
+                  onChange={(event) =>
+                    setPages((current) =>
+                      current.map((item) => (item.id === page.id ? { ...item, status: event.target.value } : item)),
+                    )
+                  }
+                >
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </Select>
+              </div>
+            ))}
           </div>
         </section>
+
+        <IndustryManager />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -898,9 +1260,15 @@ function AdminDashboard() {
                 ['Company', selectedLead.companyName],
                 ['Industry', selectedLead.industry],
                 ['Service', selectedLead.requiredService],
+                ['Service ID', selectedLead.serviceId],
                 ['Budget', selectedLead.budgetRange],
                 ['Location', selectedLead.cityOrLocation],
                 ['Source', selectedLead.leadSource],
+                [
+                  'Submitted',
+                  selectedLead.enquiredAt ? new Date(selectedLead.enquiredAt).toLocaleString() : '',
+                ],
+                ['Status', selectedLead.leadStatus],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-md border border-border bg-muted/40 p-3">
                   <p className="text-xs font-bold uppercase text-muted-foreground">{label}</p>

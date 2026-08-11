@@ -1,12 +1,38 @@
+import { useEffect } from 'react'
 import { X } from 'lucide-react'
 import { Button } from './button'
 import { cn } from '../../lib/utils'
 
 export function Dialog({ open, onOpenChange, title, description, children, className }) {
+  useEffect(() => {
+    if (!open) return undefined
+
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') onOpenChange(false)
+    }
+
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', closeOnEscape)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open, onOpenChange])
+
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[70] grid place-items-end bg-ink/55 p-3 backdrop-blur-sm sm:place-items-center" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-[70] grid place-items-end bg-ink/55 p-3 backdrop-blur-sm sm:place-items-center"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onOpenChange(false)
+      }}
+    >
       <div className={cn('animate-rise max-h-[92vh] w-full overflow-auto rounded-lg bg-white shadow-premium sm:max-w-2xl', className)}>
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-white/95 p-5 backdrop-blur">
           <div>

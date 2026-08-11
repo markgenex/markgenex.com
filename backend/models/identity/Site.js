@@ -62,6 +62,7 @@ const siteSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    contentMigrations: [String],
   },
   {
     timestamps: true,

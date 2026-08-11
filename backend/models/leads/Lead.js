@@ -21,12 +21,21 @@ const leadSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
       lowercase: true,
     },
     phone: String,
+    normalizedEmail: {
+      type: String,
+      lowercase: true,
+    },
+    normalizedPhone: String,
     company: String,
     industry: String,
+    budgetRange: String,
+    city: String,
+    state: String,
+    country: String,
+    businessRequirement: String,
     service: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Service",
@@ -43,10 +52,21 @@ const leadSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "FormSubmission",
     },
+    submissions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "FormSubmission",
+      },
+    ],
     attribution: {
       source: String,
       medium: String,
       campaign: String,
+      term: String,
+      content: String,
+      campaignSource: String,
+      landingPage: String,
+      referrer: String,
       gclid: String,
       fbclid: String,
     },
@@ -79,6 +99,20 @@ const leadSchema = new mongoose.Schema(
       ref: "Deal",
     },
     tags: [String],
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high", "urgent"],
+      default: "medium",
+    },
+    consent: {
+      marketing: { type: Boolean, default: false },
+      privacyPolicy: { type: Boolean, default: false },
+      terms: { type: Boolean, default: false },
+      text: String,
+      capturedAt: Date,
+      ipAddress: String,
+      userAgent: String,
+    },
     notes: String,
     lastActivity: Date,
     nextFollowUp: Date,
@@ -90,6 +124,8 @@ const leadSchema = new mongoose.Schema(
 );
 
 leadSchema.index({ email: 1, organization: 1 });
+leadSchema.index({ normalizedEmail: 1, organization: 1 });
+leadSchema.index({ normalizedPhone: 1, organization: 1 });
 leadSchema.index({ status: 1 });
 leadSchema.index({ assignedTo: 1 });
 leadSchema.index({ createdAt: -1 });

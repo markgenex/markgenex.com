@@ -18,6 +18,28 @@ const industrySchema = new mongoose.Schema(
       trim: true,
     },
     description: String,
+    industryNumber: String,
+    mainImage: String,
+    imageAlt: String,
+    challenges: [
+      {
+        text: { type: String, required: true },
+        order: { type: Number, default: 0 },
+      },
+    ],
+    outcomes: [
+      {
+        text: { type: String, required: true },
+        highlighted: { type: Boolean, default: true },
+        order: { type: Number, default: 0 },
+      },
+    ],
+    ctaText: { type: String, default: "Talk to an Industry Specialist" },
+    ctaLink: { type: String, default: "/consultation" },
+    featured: { type: Boolean, default: false },
+    seoTitle: String,
+    metaDescription: String,
+    keywords: [String],
     icon: String,
     image: {
       type: mongoose.Schema.Types.ObjectId,
@@ -49,5 +71,6 @@ const industrySchema = new mongoose.Schema(
 );
 
 industrySchema.index({ site: 1, slug: 1 });
+industrySchema.index({ site: 1, status: 1, order: 1 });
 
 export default mongoose.model("Industry", industrySchema);

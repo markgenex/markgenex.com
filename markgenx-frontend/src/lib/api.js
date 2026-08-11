@@ -16,7 +16,7 @@ const apiClient = axios.create({
 const endpointMap = {
   contact: ['/forms/contact-enquiries', '/leads'],
   consultation: ['/forms/consultation-bookings', '/leads'],
-  service: ['/forms/service-enquiries', '/leads'],
+  service: ['/v1/public/service-enquiries', '/forms/service-enquiries', '/leads'],
   career: ['/careers/applications'],
   partner: ['/partnerships/applications'],
 }
@@ -108,6 +108,35 @@ export function updateLeadQueue(leads) {
 export async function getLeads() {
   const data = await request('/leads')
   return data.leads || []
+}
+
+export async function getServiceEnquiries() {
+  const data = await request('/v1/admin/service-enquiries')
+  return data.enquiries || []
+}
+
+export async function getPublicIndustries() {
+  const data = await request('/v1/public/industries')
+  return data.managed ? data.industries || [] : null
+}
+
+export async function getAdminIndustries() {
+  const data = await request('/v1/admin/industries')
+  return data.industries || []
+}
+
+export async function createIndustry(payload) {
+  const data = await request('/v1/admin/industries', { method: 'POST', body: payload })
+  return data.industry
+}
+
+export async function updateIndustry(id, payload) {
+  const data = await request(`/v1/admin/industries/${id}`, { method: 'PATCH', body: payload })
+  return data.industry
+}
+
+export async function deleteIndustry(id) {
+  return request(`/v1/admin/industries/${id}`, { method: 'DELETE' })
 }
 
 export async function updateLead(id, patch) {
