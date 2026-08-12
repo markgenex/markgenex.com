@@ -18,7 +18,7 @@ const initialValues = {
   message: '',
 }
 
-export function LeadForm({ type = 'contact', title = 'Talk to an Expert', compact = false }) {
+export function LeadForm({ type = 'contact', title = 'Talk to an Expert', submitLabel = 'Request a Proposal', compact = false }) {
   const [values, setValues] = useState(initialValues)
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
@@ -137,7 +137,7 @@ export function LeadForm({ type = 'contact', title = 'Talk to an Expert', compac
 
       <Button type="submit" disabled={status === 'loading'} className="w-full">
         {status === 'loading' ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-        Request a Proposal
+        {submitLabel}
       </Button>
       <div className="flex flex-col gap-2 border-t border-border pt-3 text-xs font-semibold text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
         <span className="inline-flex items-center gap-1.5">

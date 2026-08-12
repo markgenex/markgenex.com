@@ -58,6 +58,7 @@ export { default as EmployeeProfile } from "./careers/EmployeeProfile.js";
 
 // Partnerships and Future Portals
 export { default as PartnerApplication } from "./partnerships/PartnerApplication.js";
+export { default as PartnerContent } from "./partnerships/PartnerContent.js";
 export { default as PartnerProfile } from "./partnerships/PartnerProfile.js";
 export { default as ClientProfile } from "./partnerships/ClientProfile.js";
 export { default as ClientProject } from "./partnerships/ClientProject.js";

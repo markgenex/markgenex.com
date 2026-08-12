@@ -1,0 +1,17 @@
+import mongoose from "mongoose";
+import { PartnerContent, Site } from "../../models/index.js";
+
+const SITE = "markgenexes";
+const defaults = ["University Partner", "Admission Partner", "Agency Partner", "Client Portal Ready"];
+const description = "Partnership workflows are designed with future portal roles, reporting, document sharing, and project tracking.";
+async function getSite(){return Site.findOne({subdomain:SITE})}
+async function seed(site){if(await PartnerContent.exists({site:site._id}))return;await PartnerContent.insertMany(defaults.map((name,displayOrder)=>({site:site._id,name,description,displayOrder,status:"published",publishedAt:new Date()})))}
+function json(item){return{id:String(item._id),name:item.name,description:item.description,displayOrder:item.displayOrder||0,status:item.status,publishedAt:item.publishedAt,createdAt:item.createdAt,updatedAt:item.updatedAt}}
+function payload(body,current={}){const name=String(body.name??current.name??"").trim(),descriptionValue=String(body.description??current.description??"").trim();if(!name||!descriptionValue)throw new Error("Partner name and short description are required");return{name,description:descriptionValue,displayOrder:Math.max(0,Number(body.displayOrder??current.displayOrder??0)),status:["draft","published"].includes(body.status)?body.status:current.status||"draft"}}
+export class PartnerContentController{
+  static async publicList(req,res){try{const site=await getSite();if(!site)return res.json({partners:[]});await seed(site);const items=await PartnerContent.find({site:site._id,status:"published"}).sort({displayOrder:1,createdAt:1});return res.json({partners:items.map(json)})}catch(e){return res.status(500).json({error:"Failed to load partner content",details:e.message})}}
+  static async adminList(req,res){try{const site=await getSite();if(!site)return res.json({partners:[]});await seed(site);const items=await PartnerContent.find({site:site._id}).sort({displayOrder:1,createdAt:1});return res.json({partners:items.map(json)})}catch(e){return res.status(500).json({error:"Failed to load partner content",details:e.message})}}
+  static async create(req,res){try{const site=await getSite();if(!site)return res.status(404).json({error:"Site not found"});const data=payload(req.body);const item=await PartnerContent.create({site:site._id,...data,...(data.status==="published"?{publishedAt:new Date()}:{})});return res.status(201).json({partner:json(item)})}catch(e){return res.status(400).json({error:"Failed to create partner content",details:e.message})}}
+  static async update(req,res){try{if(!mongoose.Types.ObjectId.isValid(req.params.id))return res.status(400).json({error:"Invalid partner ID"});const item=await PartnerContent.findById(req.params.id);if(!item)return res.status(404).json({error:"Partner content not found"});const data=payload(req.body,item.toObject());Object.assign(item,data);if(data.status==="published"&&!item.publishedAt)item.publishedAt=new Date();await item.save();return res.json({partner:json(item)})}catch(e){return res.status(400).json({error:"Failed to update partner content",details:e.message})}}
+  static async remove(req,res){try{const item=await PartnerContent.findByIdAndDelete(req.params.id);if(!item)return res.status(404).json({error:"Partner content not found"});return res.json({message:"Partner content deleted"})}catch(e){return res.status(400).json({error:"Failed to delete partner content",details:e.message})}}
+}

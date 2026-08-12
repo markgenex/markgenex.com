@@ -22,6 +22,7 @@ import {
   Landmark,
   LayoutDashboard,
   LineChart,
+  Loader2,
   LogOut,
   MailCheck,
   Menu,
@@ -39,7 +40,7 @@ import {
 import heroImage from './assets/hero.png'
 import { useAuth } from './context/auth-context'
 import { adminModules, navItems, roles, services } from './data/siteData'
-import { getLeadQueue, getLeads, getPublicIndustries, getPublicJobs, getServiceEnquiries, updateLead as saveLead, updateLeadQueue } from './lib/api'
+import { getLeadQueue, getLeads, getPublicIndustries, getPublicJobs, getPublicPartners, getServiceEnquiries, updateLead as saveLead, updateLeadQueue } from './lib/api'
 import { cn } from './lib/utils'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
@@ -57,6 +58,7 @@ import { JobApplicationForm } from './components/JobApplicationForm'
 import { TrackingManager } from './components/TrackingManager'
 import { CaseStudiesPage } from './components/CaseStudiesPage'
 import { CaseStudyManager } from './components/CaseStudyManager'
+import { PartnerManager } from './components/PartnerManager'
 import { initializeTracking, trackEvent } from './lib/tracking'
 
 const phoneNumber = '+919876543210'
@@ -407,43 +409,38 @@ function ServicesPage() {
         description="Choose a focused service or combine multiple disciplines into one campaign operating system."
         cta="Request a Proposal"
       >
-        <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
-          <div className="grid gap-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {services.map((service) => {
               const Icon = service.icon
               return (
-                <article key={service.slug} className="surface-card interactive-card rounded-lg p-5">
-                  <div className="flex gap-4">
+                <article key={service.slug} className="surface-card interactive-card flex flex-col rounded-lg p-5">
+                  <div className="flex flex-1 gap-4">
                     <span className="grid size-11 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
                       <Icon className="size-5" />
                     </span>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <h2 className="text-xl font-bold text-ink">{service.title}</h2>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">{service.description}</p>
-                      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-                        <Link className={cn(buttonVariants({ size: 'sm' }), 'w-full whitespace-nowrap sm:w-44')} to="/consultation">
-                          Talk to an Expert
-                          <ArrowRight className="size-4" />
-                        </Link>
-                        <button
-                          type="button"
-                          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'w-full whitespace-nowrap sm:w-44')}
-                          onClick={() => setSelectedService(service)}
-                          aria-label={`Discuss ${service.title}`}
-                        >
-                          <MessageSquareText className="size-4" />
-                          Discuss the Service
-                        </button>
-                      </div>
                     </div>
+                  </div>
+                  <div className="mt-5 grid min-w-0 gap-2 sm:grid-cols-2">
+                    <Link className={cn(buttonVariants({ size: 'sm' }), 'h-11 min-w-0 w-full whitespace-nowrap px-2 text-xs xl:text-sm')} to="/consultation">
+                      Talk to an Expert
+                      <ArrowRight className="size-3.5 shrink-0" />
+                    </Link>
+                    <button
+                      type="button"
+                      className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-11 min-w-0 w-full whitespace-nowrap px-2 text-xs xl:text-sm')}
+                      onClick={() => setSelectedService(service)}
+                      aria-label={`Discuss ${service.title}`}
+                    >
+                      <MessageSquareText className="size-3.5 shrink-0" />
+                      Discuss the Service
+                    </button>
                   </div>
                 </article>
               )
             })}
-          </div>
-          <div id="service-enquiry" className="scroll-mt-24 lg:sticky lg:top-24 lg:self-start">
-            <LeadForm type="service" title="Service Enquiry" compact />
-          </div>
         </div>
       </PageShell>
       <Dialog
@@ -751,26 +748,25 @@ function CareersPage() {
 }
 
 function PartnerPage() {
+  const [partners, setPartners] = useState([])
+  const [loadingPartners, setLoadingPartners] = useState(true)
+  const [partnerError, setPartnerError] = useState('')
+  useEffect(() => { let active = true; getPublicPartners().then((items) => active && setPartners(items)).catch((error) => active && setPartnerError(error.message)).finally(() => active && setLoadingPartners(false)); return () => { active = false } }, [])
   return (
     <PageShell
       eyebrow="Partnerships"
       title="Partner with MarkGenexes for clients, universities, and admissions growth."
       description="Built for agencies, referral partners, university partners, and admission partners that need reliable growth execution."
-      cta="Partner With Us"
+      cta={null}
     >
-      <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="grid gap-4">
-          {['University Partner', 'Admission Partner', 'Agency Partner', 'Client Portal Ready'].map((item) => (
-            <div key={item} className="surface-card interactive-card rounded-lg p-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {loadingPartners ? <div className="surface-card grid min-h-40 place-items-center rounded-lg"><Loader2 className="size-6 animate-spin text-primary" /></div> : partnerError ? <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{partnerError}</div> : partners.map((item) => (
+            <div key={item.id} className="surface-card interactive-card rounded-lg p-5">
               <Users className="size-5 text-primary" />
-              <h2 className="mt-3 text-xl font-bold text-ink">{item}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Partnership workflows are designed with future portal roles, reporting, document sharing, and project tracking.
-              </p>
+              <h2 className="mt-3 text-xl font-bold text-ink">{item.name}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
             </div>
-          ))}
-        </div>
-        <LeadForm type="partner" title="Partner With Us" />
+          ))}{!loadingPartners && !partnerError && !partners.length ? <div className="surface-card rounded-lg p-5 text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">No partner programs are currently published.</div> : null}
       </div>
     </PageShell>
   )
@@ -785,11 +781,11 @@ function PageShell({ eyebrow, title, description, cta, ctaHref = '/consultation'
           <h1 className="mt-4 max-w-4xl text-4xl font-black leading-tight text-ink sm:text-5xl">{title}</h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">{description}</p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            {ctaHref.startsWith('#') ? (
+            {cta && (ctaHref.startsWith('#') ? (
               <a className={buttonVariants()} href={ctaHref}>{cta}<ArrowRight className="size-4" /></a>
             ) : (
               <Link className={buttonVariants()} to={ctaHref}>{cta}<ArrowRight className="size-4" /></Link>
-            )}
+            ))}
             <a className={buttonVariants({ variant: 'outline' })} href={whatsappUrl} target="_blank" rel="noreferrer">
               WhatsApp
             </a>
@@ -1336,6 +1332,7 @@ function AdminDashboard() {
 
         <IndustryManager />
         <CaseStudyManager />
+        <PartnerManager />
         <CareerManager />
       </div>
 

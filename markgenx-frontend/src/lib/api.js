@@ -141,6 +141,11 @@ export async function deleteIndustry(id) {
 
 export async function getPublicJobs() { const data = await request('/v1/public/jobs'); return data.jobs || [] }
 export async function getPublicCaseStudies() { const data = await request('/v1/public/case-studies'); return data.caseStudies || [] }
+export async function getPublicPartners() { const data = await request('/v1/public/partners'); return data.partners || [] }
+export async function getAdminPartners() { const data = await request('/v1/admin/partners'); return data.partners || [] }
+export async function createPartner(payload) { const data = await request('/v1/admin/partners', { method: 'POST', body: payload }); return data.partner }
+export async function updatePartner(id, payload) { const data = await request(`/v1/admin/partners/${id}`, { method: 'PATCH', body: payload }); return data.partner }
+export async function deletePartner(id) { return request(`/v1/admin/partners/${id}`, { method: 'DELETE' }) }
 export async function getAdminCaseStudies() { const data = await request('/v1/admin/case-studies'); return data.caseStudies || [] }
 export async function createCaseStudy(payload) { const data = await request('/v1/admin/case-studies', { method: 'POST', body: payload }); return data.caseStudy }
 export async function updateCaseStudy(id, payload) { const data = await request(`/v1/admin/case-studies/${id}`, { method: 'PATCH', body: payload }); return data.caseStudy }

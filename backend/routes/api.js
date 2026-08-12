@@ -5,6 +5,7 @@ import { IndustryController } from "../controllers/cms/IndustryController.js";
 import { CareerController } from "../controllers/careers/CareerController.js";
 import { TrackingController } from "../controllers/analytics/TrackingController.js";
 import { CaseStudyController } from "../controllers/cms/CaseStudyController.js";
+import { PartnerContentController } from "../controllers/partnerships/PartnerContentController.js";
 import { isAuthenticated } from "../middlewares/auth/tokenMiddleware.js";
 
 const router = express.Router();
@@ -34,6 +35,7 @@ router.post("/v1/public/service-enquiries", LeadController.publicServiceEnquiry)
 router.get("/v1/public/industries", IndustryController.publicList);
 router.get("/v1/public/jobs", CareerController.publicJobs);
 router.get("/v1/public/case-studies", CaseStudyController.publicList);
+router.get("/v1/public/partners", PartnerContentController.publicList);
 router.get("/v1/public/case-study-images/:id", CaseStudyController.image);
 router.get("/v1/public/tracking", TrackingController.publicConfig);
 router.post("/v1/public/tracking/events", TrackingController.collect);
@@ -41,6 +43,10 @@ router.post("/v1/public/jobs/:id/applications", acceptResume, CareerController.a
 
 router.get("/v1/admin/jobs", isAuthenticated, CareerController.adminJobs);
 router.get("/v1/admin/case-studies", isAuthenticated, CaseStudyController.adminList);
+router.get("/v1/admin/partners", isAuthenticated, PartnerContentController.adminList);
+router.post("/v1/admin/partners", isAuthenticated, PartnerContentController.create);
+router.patch("/v1/admin/partners/:id", isAuthenticated, PartnerContentController.update);
+router.delete("/v1/admin/partners/:id", isAuthenticated, PartnerContentController.remove);
 router.post("/v1/admin/case-studies", isAuthenticated, CaseStudyController.create);
 router.patch("/v1/admin/case-studies/:id", isAuthenticated, CaseStudyController.update);
 router.delete("/v1/admin/case-studies/:id", isAuthenticated, CaseStudyController.remove);
