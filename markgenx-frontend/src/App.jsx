@@ -1418,31 +1418,47 @@ function FloatingActions() {
 function Footer() {
   return (
     <footer className="border-t border-border bg-white pb-20 md:pb-0">
-      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.1fr_0.9fr] lg:px-8">
-        <div>
-          <p className="text-lg font-black text-ink">MarkGenexes</p>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-            A premium growth partner for digital marketing, performance media, leads, brand, web, apps, SEO, social,
-            automation, and business consulting.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Link className="text-sm font-semibold text-muted-foreground hover:text-ink" to="/services">
-            Request a Proposal
-          </Link>
-          <Link className="text-sm font-semibold text-muted-foreground hover:text-ink" to="/consultation">
-            Start Your Growth Journey
-          </Link>
-          <Link className="text-sm font-semibold text-muted-foreground hover:text-ink" to="/careers">
-            Apply for a Job
-          </Link>
-          <Link className="text-sm font-semibold text-muted-foreground hover:text-ink" to="/partner">
-            Partner With Us
-          </Link>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        <div className="surface-card min-w-0 rounded-lg border border-border p-5 shadow-soft sm:p-6 lg:p-8">
+          <div className="grid min-w-0 gap-8 sm:grid-cols-2 lg:grid-cols-[1.8fr_0.8fr_0.8fr_0.75fr_1fr] lg:gap-7">
+            <div className="min-w-0 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-md bg-primary text-lg font-black text-white">M<sup className="text-xs">•</sup></span>
+                <p className="text-xl font-black text-ink">Markgenexs Solutions</p>
+              </div>
+              <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
+                A full-service marketing agency helping brands grow through data-driven strategy, creative storytelling, and digital innovation.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3" aria-label="Social media links">
+                {[['IN', 'LinkedIn'], ['X', 'X'], ['F', 'Facebook'], ['IG', 'Instagram']].map(([short, label]) => (
+                  <a key={label} href="#" aria-label={label} className="grid size-11 place-items-center rounded-full bg-muted text-xs font-black text-ink transition hover:bg-primary hover:text-white">{short}</a>
+                ))}
+              </div>
+            </div>
+            <FooterColumn title="Company" links={[["About Us", "/"], ["Case Studies", "/case-studies"], ["Careers", "/careers"], ["Blog / Insights", "#"], ["Contact Us", "/consultation"]]} />
+            <FooterColumn title="Services" links={[["Brand Strategy", "/services"], ["Digital Marketing", "/services"], ["Content & SEO", "/services"], ["Paid Media", "/services"], ["Web & Design", "/services"]]} />
+            <FooterColumn title="Legal" links={[["Privacy Policy", "#"], ["Terms & Conditions", "#"]]} />
+            <div className="min-w-0">
+              <h2 className="text-sm font-black uppercase tracking-wide text-ink">Get in touch</h2>
+              <div className="mt-4 grid gap-3 text-sm leading-6 text-muted-foreground">
+                <a className="break-all transition hover:text-ink" href="mailto:hello@markgenexs.com">hello@markgenexs.com</a>
+                <a className="transition hover:text-ink" href="tel:+918045678900">+91 80 4567 8900</a>
+                <address className="not-italic">Prestige Tech Park,<br />Bangalore 560103</address>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 flex flex-col gap-4 border-t border-border pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:text-sm">
+            <p>© 2026 Markgenexs Solutions Pvt Ltd. All rights reserved.</p>
+            <div className="flex gap-6"><a href="#" className="hover:text-ink">Privacy</a><a href="#" className="hover:text-ink">Terms</a></div>
+          </div>
         </div>
       </div>
     </footer>
   )
+}
+
+function FooterColumn({ title, links }) {
+  return <div className="min-w-0"><h2 className="text-sm font-black uppercase tracking-wide text-ink">{title}</h2><div className="mt-4 grid gap-3">{links.map(([label, href]) => href.startsWith('/') ? <Link key={label} className="text-sm text-muted-foreground transition hover:text-ink" to={href}>{label}</Link> : <a key={label} className="text-sm text-muted-foreground transition hover:text-ink" href={href}>{label}</a>)}</div></div>
 }
 
 function NotFound() {
