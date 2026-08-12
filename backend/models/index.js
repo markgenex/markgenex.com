@@ -28,6 +28,7 @@ export { default as RedirectRule } from "./cms/RedirectRule.js";
 // Media
 export { default as MediaFolder } from "./media/MediaFolder.js";
 export { default as MediaAsset } from "./media/MediaAsset.js";
+export { default as StoredImage } from "./media/StoredImage.js";
 
 // Forms and Lead Capture
 export { default as FormDefinition } from "./forms/FormDefinition.js";

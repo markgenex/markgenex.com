@@ -19,8 +19,13 @@ const siteSettingSchema = new mongoose.Schema(
     },
     tracking: {
       googleAnalyticsId: String,
+      googleAnalyticsEnabled: { type: Boolean, default: false },
       googleTagManagerId: String,
       facebookPixelId: String,
+      facebookPixelEnabled: { type: Boolean, default: false },
+      firstPartyEnabled: { type: Boolean, default: true },
+      trackPageViews: { type: Boolean, default: true },
+      trackConversions: { type: Boolean, default: true },
       hotjarId: String,
       customPixels: [
         {

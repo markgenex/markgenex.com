@@ -140,13 +140,24 @@ export async function deleteIndustry(id) {
 }
 
 export async function getPublicJobs() { const data = await request('/v1/public/jobs'); return data.jobs || [] }
+export async function getPublicCaseStudies() { const data = await request('/v1/public/case-studies'); return data.caseStudies || [] }
+export async function getAdminCaseStudies() { const data = await request('/v1/admin/case-studies'); return data.caseStudies || [] }
+export async function createCaseStudy(payload) { const data = await request('/v1/admin/case-studies', { method: 'POST', body: payload }); return data.caseStudy }
+export async function updateCaseStudy(id, payload) { const data = await request(`/v1/admin/case-studies/${id}`, { method: 'PATCH', body: payload }); return data.caseStudy }
+export async function deleteCaseStudy(id) { return request(`/v1/admin/case-studies/${id}`, { method: 'DELETE' }) }
+export async function uploadCaseStudyImage(file) { const form = new FormData(); form.append('image', file); const { data } = await apiClient.post('/v1/admin/case-studies/images', form, { headers: { 'Content-Type': 'multipart/form-data' } }); return data.image }
+export async function getPublicTracking() { const data = await request('/v1/public/tracking'); return data.tracking || {} }
+export async function recordTrackingEvent(payload) { return request('/v1/public/tracking/events', { method: 'POST', body: payload }) }
+export async function getTrackingSettings() { const data = await request('/v1/admin/tracking'); return data.tracking || {} }
+export async function saveTrackingSettings(payload) { const data = await request('/v1/admin/tracking', { method: 'PUT', body: payload }); return data.tracking }
+export async function getTrackingReport(days = 30) { return request(`/v1/admin/tracking/report?days=${days}`) }
 export async function submitJobApplication(jobId, payload) { const form = new FormData(); ['fullName', 'email', 'phone', 'experience', 'portfolio'].forEach((key) => form.append(key, payload[key] || '')); form.append('resume', payload.resume); return request(`/v1/public/jobs/${jobId}/applications`, { method: 'POST', body: form, headers: { 'Content-Type': undefined } }) }
 export async function getAdminJobs() { const data = await request('/v1/admin/jobs'); return data.jobs || [] }
 export async function createJob(payload) { const data = await request('/v1/admin/jobs', { method: 'POST', body: payload }); return data.job }
 export async function updateJob(id, payload) { const data = await request(`/v1/admin/jobs/${id}`, { method: 'PATCH', body: payload }); return data.job }
 export async function deleteJob(id) { return request(`/v1/admin/jobs/${id}`, { method: 'DELETE' }) }
 export async function getJobApplications(params = {}) { const query = new URLSearchParams(Object.entries(params).filter(([, value]) => value)); const data = await request(`/v1/admin/job-applications${query.size ? `?${query}` : ''}`); return data.applications || [] }
-export async function updateJobApplication(id, status) { const data = await request(`/v1/admin/job-applications/${id}`, { method: 'PATCH', body: { status } }); return data.application }
+export async function updateJobApplication(id, status) { return request(`/v1/admin/job-applications/${id}`, { method: 'PATCH', body: { status } }) }
 export async function syncCareerMailbox() { return request('/v1/admin/job-applications/sync', { method: 'POST' }) }
 export async function getApplicationResume(id, download = false) { const { data } = await apiClient.get(`/v1/admin/job-applications/${id}/resume${download ? '?download=1' : ''}`, { responseType: 'blob' }); return data }
 
@@ -167,6 +178,8 @@ export function getTrackingData() {
     leadSource: params.get('source') || utm.utm_source || document.referrer || 'direct',
     campaignSource: utm.utm_campaign || params.get('campaign') || '',
     utm,
+    gclid: params.get('gclid') || '',
+    fbclid: params.get('fbclid') || '',
     pagePath: window.location.pathname,
     referrer: document.referrer,
     enquiredAt: new Date().toISOString(),
@@ -184,12 +197,7 @@ function trackLeadConversion(lead) {
     utm: lead.utm,
   })
 
-  if (typeof window.fbq === 'function') {
-    window.fbq('track', 'Lead', {
-      content_name: lead.requiredService || lead.type,
-      content_category: lead.type,
-    })
-  }
+  window.dispatchEvent(new CustomEvent('markgenx:conversion', { detail: { eventName: lead.type === 'consultation' ? 'consultation_booking' : lead.type === 'service' ? 'service_enquiry' : 'lead_submission', properties: { leadType: lead.type, requiredService: lead.requiredService } } }))
 }
 
 async function request(path, options = {}) {

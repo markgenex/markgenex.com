@@ -5,9 +5,15 @@ import path from "node:path";
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import { ApplicationActivity, CareerApplication, JobOpening, Site } from "../../models/index.js";
+import { EmailUtil } from "../../utils/email/EmailUtil.js";
 
 const MIGRATION = "careers-jobs-v1";
 const SITE = "markgenexes";
+const COMPANY_NAME = process.env.COMPANY_NAME || "MarkGenexes";
+const APPLICATION_STATUSES = ["New", "Reviewed", "Shortlisted", "Interview", "Selected", "Rejected"];
+const statusLookup = Object.fromEntries(APPLICATION_STATUSES.map((status) => [status.toLowerCase(), status]));
+function normalizeApplicationStatus(value) { return statusLookup[String(value || "").trim().toLowerCase()] || null; }
+async function migrateApplicationStatuses() { await Promise.all(APPLICATION_STATUSES.map((status) => CareerApplication.updateMany({ status: status.toLowerCase() }, { $set: { status } }))); }
 const seedJobs = [
   { title: "Senior Performance Marketing Manager", slug: "senior-performance-marketing-manager", department: "Growth", location: "India", workMode: "remote", description: "We are looking for a senior performance marketing manager to join our Growth team. You will own meaningful work from day one, partner directly with clients, and have the autonomy to do your best work." },
   { title: "Content Strategist", slug: "content-strategist", department: "Content", location: "India", workMode: "remote", description: "Shape content strategy, editorial systems, and high-quality narratives that connect audience needs with measurable business growth." },
@@ -89,7 +95,7 @@ export class CareerController {
       await fs.mkdir(resumeDirectory, { recursive: true });
       storedPath = path.join(resumeDirectory, storageName);
       await fs.writeFile(storedPath, req.file.buffer, { flag: "wx", mode: 0o600 });
-      const app = await CareerApplication.create({ jobOpening: job._id, firstName: parts[0], lastName: parts.slice(1).join(" ") || "-", email, phone, experience, portfolio, resumeStorageName: storageName, resumeFileName: path.basename(req.file.originalname), resumeMimeType: req.file.mimetype, resumeSize: req.file.size, status: "new", appliedAt: new Date() });
+      const app = await CareerApplication.create({ jobOpening: job._id, firstName: parts[0], lastName: parts.slice(1).join(" ") || "-", email, phone, experience, portfolio, resumeStorageName: storageName, resumeFileName: path.basename(req.file.originalname), resumeMimeType: req.file.mimetype, resumeSize: req.file.size, status: "New", appliedAt: new Date() });
       await JobOpening.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } });
       return res.status(201).json({ message: `Your application for ${job.title} was submitted successfully.`, applicationId: String(app._id) });
     } catch (e) {
@@ -130,7 +136,7 @@ export class CareerController {
             const portfolio = body.match(/(?:portfolio|resume\s*\/\s*portfolio link)\s*:\s*(https?:\/\/\S+)/i)?.[1] || "";
             const attachments = (parsed.attachments || []).filter((a) => a.content?.length <= 4 * 1024 * 1024).map((a) => ({ fileName: a.filename || "attachment", contentType: a.contentType, size: a.size, data: `data:${a.contentType};base64,${a.content.toString("base64")}` }));
             const resume = attachments.find((a) => /pdf|msword|officedocument/i.test(a.contentType || ""));
-            await CareerApplication.create({ jobOpening: job._id, firstName: parts[0] || "Email", lastName: parts.slice(1).join(" ") || "Applicant", email: String(sender.address || "").toLowerCase(), phone, experience, portfolio, coverLetter: body, resumeData: resume?.data || "", resumeFileName: resume?.fileName || "", source: "email", inboundMessageId: messageId, emailSubject: subject, emailMessage: body, emailAttachments: attachments, status: "new", appliedAt: parsed.date || message.envelope?.date || new Date() });
+            await CareerApplication.create({ jobOpening: job._id, firstName: parts[0] || "Email", lastName: parts.slice(1).join(" ") || "Applicant", email: String(sender.address || "").toLowerCase(), phone, experience, portfolio, coverLetter: body, resumeData: resume?.data || "", resumeFileName: resume?.fileName || "", source: "email", inboundMessageId: messageId, emailSubject: subject, emailMessage: body, emailAttachments: attachments, status: "New", appliedAt: parsed.date || message.envelope?.date || new Date() });
             await JobOpening.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } });
             imported += 1;
           }
@@ -140,6 +146,30 @@ export class CareerController {
     } catch (error) { return res.status(502).json({ error: "Careers mailbox sync failed", details: error.message }); }
     finally { if (client.usable) await client.logout().catch(() => {}); }
   }
-  static async applications(req, res) { try { const filter = {}; if (req.query.jobId) filter.jobOpening = req.query.jobId; if (req.query.status) filter.status = req.query.status; if (req.query.dateFrom || req.query.dateTo) filter.appliedAt = { ...(req.query.dateFrom ? { $gte: new Date(req.query.dateFrom) } : {}), ...(req.query.dateTo ? { $lte: new Date(`${req.query.dateTo}T23:59:59.999Z`) } : {}) }; let query = CareerApplication.find(filter).populate("jobOpening", "title department").sort({ appliedAt: -1, createdAt: -1 }); const apps = await query; let data = apps.map(applicationJson); if (req.query.department) data = data.filter((x) => x.department === req.query.department); if (req.query.q) { const q = String(req.query.q).toLowerCase(); data = data.filter((x) => [x.name, x.email, x.phone, x.appliedJob].some((v) => v.toLowerCase().includes(q))); } return res.json({ applications: data }); } catch (e) { return res.status(500).json({ error: "Failed to fetch applications", details: e.message }); } }
-  static async updateApplication(req, res) { try { const allowed = ["new", "reviewed", "shortlisted", "interview", "selected", "rejected"]; if (!allowed.includes(req.body.status)) return res.status(400).json({ error: "Invalid application status" }); const app = await CareerApplication.findById(req.params.id); if (!app) return res.status(404).json({ error: "Application not found" }); const oldStatus = app.status; app.status = req.body.status; app.reviewedBy = req.user.id; app.reviewedAt = new Date(); await app.save(); await ApplicationActivity.create({ application: app._id, type: "status_change", title: "Application status updated", oldStatus, newStatus: app.status, performedBy: req.user.id }); return res.json({ application: applicationJson(await app.populate("jobOpening")) }); } catch (e) { return res.status(400).json({ error: "Failed to update application", details: e.message }); } }
+  static async applications(req, res) { try { await migrateApplicationStatuses(); const filter = {}; if (req.query.jobId) filter.jobOpening = req.query.jobId; if (req.query.status) { const status = normalizeApplicationStatus(req.query.status); if (!status) return res.status(400).json({ error: "Invalid application status" }); filter.status = status; } if (req.query.dateFrom || req.query.dateTo) filter.appliedAt = { ...(req.query.dateFrom ? { $gte: new Date(req.query.dateFrom) } : {}), ...(req.query.dateTo ? { $lte: new Date(`${req.query.dateTo}T23:59:59.999Z`) } : {}) }; let query = CareerApplication.find(filter).populate("jobOpening", "title department").sort({ appliedAt: -1, createdAt: -1 }); const apps = await query; let data = apps.map(applicationJson); if (req.query.department) data = data.filter((x) => x.department === req.query.department); if (req.query.q) { const q = String(req.query.q).toLowerCase(); data = data.filter((x) => [x.name, x.email, x.phone, x.appliedJob].some((v) => v.toLowerCase().includes(q))); } return res.json({ applications: data }); } catch (e) { return res.status(500).json({ error: "Failed to fetch applications", details: e.message }); } }
+  static async updateApplication(req, res) {
+    try {
+      const status = normalizeApplicationStatus(req.body.status);
+      if (!status) return res.status(400).json({ error: "Invalid application status", allowedStatuses: APPLICATION_STATUSES });
+      const app = await CareerApplication.findById(req.params.id).populate("jobOpening", "title department");
+      if (!app) return res.status(404).json({ error: "Application not found" });
+      const oldStatus = normalizeApplicationStatus(app.status) || app.status;
+      if (oldStatus === status) return res.json({ application: applicationJson(app), message: `Application is already ${status}.`, unchanged: true, emailSent: false });
+      app.status = status;
+      app.reviewedBy = req.user.id;
+      app.reviewedAt = new Date();
+      await app.save();
+      await ApplicationActivity.create({ application: app._id, type: "status_change", title: "Application status updated", oldStatus, newStatus: status, performedBy: req.user.id }).catch(() => {});
+      let emailSent = false, emailError = "";
+      try {
+        await EmailUtil.sendJobApplicationStatusEmail({ email: app.email, applicantName: `${app.firstName} ${app.lastName}`.replace(/\s+-$/, "").trim(), jobTitle: app.jobOpening?.title || "the position", companyName: COMPANY_NAME, status });
+        emailSent = true;
+        await ApplicationActivity.create({ application: app._id, type: "email_sent", title: `${status} status email sent`, newStatus: status, performedBy: req.user.id, metadata: { recipient: app.email } });
+      } catch (error) {
+        emailError = "Status was saved, but the notification email could not be sent.";
+        await ApplicationActivity.create({ application: app._id, type: "email_sent", title: `${status} status email failed`, newStatus: status, performedBy: req.user.id, metadata: { recipient: app.email, error: error.message } }).catch(() => {});
+      }
+      return res.json({ application: applicationJson(app), message: emailSent ? `Status updated to ${status} and email sent.` : `Status updated to ${status}.`, emailSent, emailError });
+    } catch (e) { return res.status(400).json({ error: "Failed to update application", details: e.message }); }
+  }
 }

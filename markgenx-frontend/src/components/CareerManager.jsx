@@ -1,51 +1,693 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ChevronDown, Download, Eye, Loader2, MailCheck, Pencil, Plus, Trash2 } from 'lucide-react'
-import { createJob, deleteJob, getAdminJobs, getApplicationResume, getJobApplications, syncCareerMailbox, updateJob, updateJobApplication } from '../lib/api'
-import { Badge } from './ui/badge'
-import { Button } from './ui/button'
-import { Dialog } from './ui/dialog'
-import { Field, Input, Select, Textarea } from './ui/field'
+import { useEffect, useMemo, useState } from "react";
+import {
+  ChevronDown,
+  Download,
+  Eye,
+  Loader2,
+  MailCheck,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import {
+  createJob,
+  deleteJob,
+  getAdminJobs,
+  getApplicationResume,
+  getJobApplications,
+  syncCareerMailbox,
+  updateJob,
+  updateJobApplication,
+} from "../lib/api";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Dialog } from "./ui/dialog";
+import { Field, Input, Select, Textarea } from "./ui/field";
 
-const emptyJob = { title: '', department: '', employmentType: 'full-time', workMode: 'remote', location: '', experienceRequired: '', salaryRange: '', description: '', responsibilities: [], requirements: [], skills: [], benefits: [], numberOfOpenings: 1, applicationDeadline: '', displayOrder: 0, status: 'draft' }
-const lines = (value) => Array.isArray(value) ? value.join('\n') : value || ''
-const parseLines = (value) => value.split('\n').map((x) => x.trim()).filter(Boolean)
+const emptyJob = {
+  title: "",
+  department: "",
+  employmentType: "full-time",
+  workMode: "remote",
+  location: "",
+  experienceRequired: "",
+  salaryRange: "",
+  description: "",
+  responsibilities: [],
+  requirements: [],
+  skills: [],
+  benefits: [],
+  numberOfOpenings: 1,
+  applicationDeadline: "",
+  displayOrder: 0,
+  status: "draft",
+};
+const lines = (value) =>
+  Array.isArray(value) ? value.join("\n") : value || "";
+const parseLines = (value) =>
+  value
+    .split("\n")
+    .map((x) => x.trim())
+    .filter(Boolean);
+const applicationStatuses = [
+  "New",
+  "Reviewed",
+  "Shortlisted",
+  "Interview",
+  "Selected",
+  "Rejected",
+];
 
 export function CareerManager() {
-  const [jobs, setJobs] = useState([]), [applications, setApplications] = useState([])
-  const [editing, setEditing] = useState(null), [viewing, setViewing] = useState(null), [expanded, setExpanded] = useState(new Set())
-  const [tab, setTab] = useState('jobs'), [loading, setLoading] = useState(true), [feedback, setFeedback] = useState('')
-  const [syncing, setSyncing] = useState(false)
-  const [filters, setFilters] = useState({ q: '', jobId: '', department: '', status: '', dateFrom: '', dateTo: '' })
+  const [jobs, setJobs] = useState([]),
+    [applications, setApplications] = useState([]);
+  const [editing, setEditing] = useState(null),
+    [viewing, setViewing] = useState(null),
+    [expanded, setExpanded] = useState(new Set());
+  const [tab, setTab] = useState("jobs"),
+    [loading, setLoading] = useState(true),
+    [feedback, setFeedback] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const [statusUpdates, setStatusUpdates] = useState({});
+  const [filters, setFilters] = useState({
+    q: "",
+    jobId: "",
+    department: "",
+    status: "",
+    dateFrom: "",
+    dateTo: "",
+  });
 
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
     Promise.all([getAdminJobs(), getJobApplications()])
-      .then(([jobData, appData]) => { if (mounted) { setJobs(jobData); setApplications(appData) } })
-      .catch((error) => { if (mounted) setFeedback(error.message) })
-      .finally(() => { if (mounted) setLoading(false) })
-    return () => { mounted = false }
-  }, [])
-  const departments = useMemo(() => [...new Set(jobs.map((j) => j.department).filter(Boolean))], [jobs])
-  const filtered = applications.filter((a) => (!filters.q || [a.name, a.email, a.phone, a.appliedJob].some((v) => v.toLowerCase().includes(filters.q.toLowerCase()))) && (!filters.jobId || a.jobId === filters.jobId) && (!filters.department || a.department === filters.department) && (!filters.status || a.status === filters.status) && (!filters.dateFrom || new Date(a.appliedAt) >= new Date(filters.dateFrom)) && (!filters.dateTo || new Date(a.appliedAt) <= new Date(`${filters.dateTo}T23:59:59`)))
-  const change = (name, value) => setEditing((current) => ({ ...current, [name]: value }))
+      .then(([jobData, appData]) => {
+        if (mounted) {
+          setJobs(jobData);
+          setApplications(appData);
+        }
+      })
+      .catch((error) => {
+        if (mounted) setFeedback(error.message);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+  const departments = useMemo(
+    () => [...new Set(jobs.map((j) => j.department).filter(Boolean))],
+    [jobs],
+  );
+  const filtered = applications.filter(
+    (a) =>
+      (!filters.q ||
+        [a.name, a.email, a.phone, a.appliedJob].some((v) =>
+          v.toLowerCase().includes(filters.q.toLowerCase()),
+        )) &&
+      (!filters.jobId || a.jobId === filters.jobId) &&
+      (!filters.department || a.department === filters.department) &&
+      (!filters.status || a.status === filters.status) &&
+      (!filters.dateFrom ||
+        new Date(a.appliedAt) >= new Date(filters.dateFrom)) &&
+      (!filters.dateTo ||
+        new Date(a.appliedAt) <= new Date(`${filters.dateTo}T23:59:59`)),
+  );
+  const change = (name, value) =>
+    setEditing((current) => ({ ...current, [name]: value }));
 
-  async function save(event) { event.preventDefault(); setFeedback(''); try { const payload = { ...editing, responsibilities: parseLines(lines(editing.responsibilities)), requirements: parseLines(lines(editing.requirements)), skills: parseLines(lines(editing.skills)), benefits: parseLines(lines(editing.benefits)) }; const saved = editing.id ? await updateJob(editing.id, payload) : await createJob(payload); setJobs((current) => [...current.filter((j) => j.id !== saved.id), saved].sort((a, b) => a.displayOrder - b.displayOrder)); setEditing(null); setFeedback('Job saved successfully.') } catch (e) { setFeedback(e.message) } }
-  async function patchJob(job, patch) { try { const saved = await updateJob(job.id, { ...job, ...patch }); setJobs((current) => current.map((j) => j.id === saved.id ? saved : j)) } catch (e) { setFeedback(e.message) } }
-  async function remove(job) { if (!window.confirm(`Delete “${job.title}”?`)) return; try { await deleteJob(job.id); setJobs((current) => current.filter((j) => j.id !== job.id)) } catch (e) { setFeedback(e.message) } }
-  async function appStatus(app, status) { try { const saved = await updateJobApplication(app.id, status); setApplications((current) => current.map((a) => a.id === saved.id ? saved : a)) } catch (e) { setFeedback(e.message) } }
-  async function syncInbox() { setSyncing(true); setFeedback(''); try { const result = await syncCareerMailbox(); setApplications(await getJobApplications()); setFeedback(`${result.message}: ${result.imported} imported, ${result.skipped} skipped.`) } catch (e) { setFeedback(e.message) } finally { setSyncing(false) } }
-  async function openResume(app, download) { try { const blob = await getApplicationResume(app.id, download); const url = URL.createObjectURL(blob); if (download) { const link = document.createElement('a'); link.href = url; link.download = app.resumeFileName || 'resume'; link.click() } else window.open(url, '_blank', 'noopener,noreferrer'); window.setTimeout(() => URL.revokeObjectURL(url), 60000) } catch (e) { setFeedback(e.message) } }
+  async function save(event) {
+    event.preventDefault();
+    setFeedback("");
+    try {
+      const payload = {
+        ...editing,
+        responsibilities: parseLines(lines(editing.responsibilities)),
+        requirements: parseLines(lines(editing.requirements)),
+        skills: parseLines(lines(editing.skills)),
+        benefits: parseLines(lines(editing.benefits)),
+      };
+      const saved = editing.id
+        ? await updateJob(editing.id, payload)
+        : await createJob(payload);
+      setJobs((current) =>
+        [...current.filter((j) => j.id !== saved.id), saved].sort(
+          (a, b) => a.displayOrder - b.displayOrder,
+        ),
+      );
+      setEditing(null);
+      setFeedback("Job saved successfully.");
+    } catch (e) {
+      setFeedback(e.message);
+    }
+  }
+  async function patchJob(job, patch) {
+    try {
+      const saved = await updateJob(job.id, { ...job, ...patch });
+      setJobs((current) => current.map((j) => (j.id === saved.id ? saved : j)));
+    } catch (e) {
+      setFeedback(e.message);
+    }
+  }
+  async function remove(job) {
+    if (!window.confirm(`Delete “${job.title}”?`)) return;
+    try {
+      await deleteJob(job.id);
+      setJobs((current) => current.filter((j) => j.id !== job.id));
+    } catch (e) {
+      setFeedback(e.message);
+    }
+  }
+  async function appStatus(app, status) {
+    if (status === app.status || statusUpdates[app.id]?.loading) return;
+    setStatusUpdates((current) => ({
+      ...current,
+      [app.id]: { loading: true, message: "", error: false },
+    }));
+    try {
+      const result = await updateJobApplication(app.id, status);
+      setApplications((current) =>
+        current.map((a) =>
+          a.id === result.application.id ? result.application : a,
+        ),
+      );
+      setStatusUpdates((current) => ({
+        ...current,
+        [app.id]: {
+          loading: false,
+          message: result.emailError || result.message,
+          error: Boolean(result.emailError),
+        },
+      }));
+    } catch (e) {
+      setStatusUpdates((current) => ({
+        ...current,
+        [app.id]: { loading: false, message: e.message, error: true },
+      }));
+    }
+  }
+  async function syncInbox() {
+    setSyncing(true);
+    setFeedback("");
+    try {
+      const result = await syncCareerMailbox();
+      setApplications(await getJobApplications());
+      setFeedback(
+        `${result.message}: ${result.imported} imported, ${result.skipped} skipped.`,
+      );
+    } catch (e) {
+      setFeedback(e.message);
+    } finally {
+      setSyncing(false);
+    }
+  }
+  async function openResume(app, download) {
+    try {
+      const blob = await getApplicationResume(app.id, download);
+      const url = URL.createObjectURL(blob);
+      if (download) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = app.resumeFileName || "resume";
+        link.click();
+      } else window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (e) {
+      setFeedback(e.message);
+    }
+  }
 
-  return <section className="surface-card min-w-0 rounded-lg p-4 sm:p-5">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-bold text-ink">Careers / Job Management</h2><p className="mt-1 text-sm text-muted-foreground">Publish openings and manage applicants by role.</p></div><div className="flex flex-col gap-2 sm:flex-row"><Button variant="outline" className="w-full sm:w-auto" onClick={syncInbox} disabled={syncing}>{syncing ? <Loader2 className="size-4 animate-spin" /> : <MailCheck className="size-4" />}{syncing ? 'Syncing…' : 'Sync Inbox'}</Button><Button className="w-full sm:w-auto" onClick={() => setEditing({ ...emptyJob, displayOrder: jobs.length })}><Plus className="size-4" />Add Job</Button></div></div>
-    <div className="mt-4 flex rounded-md border border-border bg-muted p-1">{[['jobs', `Jobs (${jobs.length})`], ['applicants', `Applicants (${applications.length})`]].map(([id, label]) => <button key={id} className={`min-h-10 flex-1 rounded-md text-sm font-bold transition ${tab === id ? 'bg-white text-ink shadow-sm' : 'text-muted-foreground'}`} onClick={() => setTab(id)}>{label}</button>)}</div>
-    {feedback ? <p className="mt-3 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">{feedback}</p> : null}
-    {loading ? <div className="grid place-items-center py-10"><Loader2 className="size-6 animate-spin text-primary" /></div> : tab === 'jobs' ? <div className="mt-4 grid gap-2">{jobs.map((job) => { const open = expanded.has(job.id); return <article key={job.id} className="overflow-hidden rounded-lg border border-border bg-white"><button className="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-left" onClick={() => setExpanded((current) => { const next = new Set(current); open ? next.delete(job.id) : next.add(job.id); return next })}><span className="font-bold text-ink">{job.title}</span><ChevronDown className={`size-5 text-primary transition ${open ? 'rotate-180' : ''}`} /></button>{open ? <div className="animate-enter border-t border-border p-4"><div className="flex flex-wrap gap-2"><Badge>{job.department}</Badge><Badge>{job.workMode}</Badge><Badge>{job.employmentType}</Badge><Badge>{job.status}</Badge></div><p className="mt-3 text-sm leading-6 text-muted-foreground">{job.description}</p><div className="mt-3 grid gap-2 text-xs sm:grid-cols-3"><p className="rounded-md bg-muted p-2"><b>Location:</b> {job.location || '—'}</p><p className="rounded-md bg-muted p-2"><b>Experience:</b> {job.experienceRequired || '—'}</p><p className="rounded-md bg-muted p-2"><b>Openings:</b> {job.numberOfOpenings}</p></div><div className="mt-4 flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => setViewing(job)}><Eye className="size-4" />View</Button><Button size="sm" onClick={() => setEditing(job)}><Pencil className="size-4" />Edit</Button><Button size="sm" variant="outline" onClick={() => patchJob(job, { status: job.status === 'draft' ? 'open' : 'draft' })}>{job.status === 'draft' ? 'Publish' : 'Unpublish'}</Button><Button size="sm" variant="outline" onClick={() => patchJob(job, { status: job.status === 'closed' ? 'open' : 'closed' })}>{job.status === 'closed' ? 'Reopen' : 'Close'}</Button><Button size="sm" variant="ghost" className="text-red-600" onClick={() => remove(job)}><Trash2 className="size-4" />Delete</Button></div></div> : null}</article> })}</div> : <div className="mt-4">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Field label="Search"><Input value={filters.q} onChange={(e) => setFilters({ ...filters, q: e.target.value })} placeholder="Name, email, phone…" /></Field><Field label="Job"><Select value={filters.jobId} onChange={(e) => setFilters({ ...filters, jobId: e.target.value })}><option value="">All jobs</option>{jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}</Select></Field><Field label="Department"><Select value={filters.department} onChange={(e) => setFilters({ ...filters, department: e.target.value })}><option value="">All departments</option>{departments.map((d) => <option key={d}>{d}</option>)}</Select></Field><Field label="Status"><Select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="">All statuses</option>{['new','reviewed','shortlisted','interview','selected','rejected'].map((s) => <option key={s}>{s}</option>)}</Select></Field><Field label="From"><Input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} /></Field><Field label="To"><Input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} /></Field></div>
-      <div className="mt-4 grid gap-3">{filtered.map((app) => <article key={app.id} className="rounded-lg border border-border bg-white p-4"><div className="flex flex-col gap-3 sm:flex-row sm:justify-between"><div><p className="font-bold text-ink">{app.name}</p><p className="text-xs text-muted-foreground">{app.appliedJob} · {new Date(app.appliedAt).toLocaleString()}</p></div><Select className="sm:w-40" value={app.status} onChange={(e) => appStatus(app, e.target.value)} aria-label={`Status for ${app.name}`}>{['new','reviewed','shortlisted','interview','selected','rejected'].map((s) => <option key={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}</Select></div><div className="mt-3 grid gap-2 text-sm sm:grid-cols-2"><p><b>Email:</b> {app.email}</p><p><b>Phone:</b> {app.phone}</p><p><b>Experience:</b> {app.experience || '—'}</p><p><b>Portfolio:</b> {app.portfolio || app.linkedinProfile ? <a className="break-all text-primary hover:underline" href={app.portfolio || app.linkedinProfile} target="_blank" rel="noreferrer">Open link</a> : '—'}</p></div>{app.coverLetter ? <p className="mt-3 text-sm leading-6 text-muted-foreground">{app.coverLetter}</p> : null}{app.resumeAvailable ? <div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => openResume(app, false)}><Eye className="size-4" />View Resume</Button><Button size="sm" variant="outline" onClick={() => openResume(app, true)}><Download className="size-4" />Download</Button></div> : <p className="mt-3 text-xs text-muted-foreground">No resume available.</p>}</article>)}{!filtered.length ? <p className="py-8 text-center text-sm text-muted-foreground">No applicants match these filters.</p> : null}</div>
-    </div>}
+  return (
+    <section className="surface-card min-w-0 rounded-lg p-4 sm:p-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-ink">
+            Careers / Job Management
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Publish openings and manage applicants by role.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            onClick={syncInbox}
+            disabled={syncing}
+          >
+            {syncing ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <MailCheck className="size-4" />
+            )}
+            {syncing ? "Syncing…" : "Sync Inbox"}
+          </Button>
+          <Button
+            className="w-full sm:w-auto"
+            onClick={() =>
+              setEditing({ ...emptyJob, displayOrder: jobs.length })
+            }
+          >
+            <Plus className="size-4" />
+            Add Job
+          </Button>
+        </div>
+      </div>
+      <div className="mt-4 flex rounded-md border border-border bg-muted p-1">
+        {[
+          ["jobs", `Jobs (${jobs.length})`],
+          ["applicants", `Applicants (${applications.length})`],
+        ].map(([id, label]) => (
+          <button
+            key={id}
+            className={`min-h-10 flex-1 rounded-md text-sm font-bold transition ${tab === id ? "bg-white text-ink shadow-sm" : "text-muted-foreground"}`}
+            onClick={() => setTab(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {feedback ? (
+        <p className="mt-3 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">
+          {feedback}
+        </p>
+      ) : null}
+      {loading ? (
+        <div className="grid place-items-center py-10">
+          <Loader2 className="size-6 animate-spin text-primary" />
+        </div>
+      ) : tab === "jobs" ? (
+        <div className="mt-4 grid gap-2">
+          {jobs.map((job) => {
+            const open = expanded.has(job.id);
+            return (
+              <article
+                key={job.id}
+                className="overflow-hidden rounded-lg border border-border bg-white"
+              >
+                <button
+                  className="flex min-h-14 w-full items-center justify-between gap-3 px-4 text-left"
+                  onClick={() =>
+                    setExpanded((current) => {
+                      const next = new Set(current);
+                      open ? next.delete(job.id) : next.add(job.id);
+                      return next;
+                    })
+                  }
+                >
+                  <span className="font-bold text-ink">{job.title}</span>
+                  <ChevronDown
+                    className={`size-5 text-primary transition ${open ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {open ? (
+                  <div className="animate-enter border-t border-border p-4">
+                    <div className="flex flex-wrap gap-2">
+                      <Badge>{job.department}</Badge>
+                      <Badge>{job.workMode}</Badge>
+                      <Badge>{job.employmentType}</Badge>
+                      <Badge>{job.status}</Badge>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      {job.description}
+                    </p>
+                    <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+                      <p className="rounded-md bg-muted p-2">
+                        <b>Location:</b> {job.location || "—"}
+                      </p>
+                      <p className="rounded-md bg-muted p-2">
+                        <b>Experience:</b> {job.experienceRequired || "—"}
+                      </p>
+                      <p className="rounded-md bg-muted p-2">
+                        <b>Openings:</b> {job.numberOfOpenings}
+                      </p>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setViewing(job)}
+                      >
+                        <Eye className="size-4" />
+                        View
+                      </Button>
+                      <Button size="sm" onClick={() => setEditing(job)}>
+                        <Pencil className="size-4" />
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          patchJob(job, {
+                            status: job.status === "draft" ? "open" : "draft",
+                          })
+                        }
+                      >
+                        {job.status === "draft" ? "Publish" : "Unpublish"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          patchJob(job, {
+                            status: job.status === "closed" ? "open" : "closed",
+                          })
+                        }
+                      >
+                        {job.status === "closed" ? "Reopen" : "Close"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-600"
+                        onClick={() => remove(job)}
+                      >
+                        <Trash2 className="size-4" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Field label="Search">
+              <Input
+                value={filters.q}
+                onChange={(e) => setFilters({ ...filters, q: e.target.value })}
+                placeholder="Name, email, phone…"
+              />
+            </Field>
+            <Field label="Job">
+              <Select
+                value={filters.jobId}
+                onChange={(e) =>
+                  setFilters({ ...filters, jobId: e.target.value })
+                }
+              >
+                <option value="">All jobs</option>
+                {jobs.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.title}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Department">
+              <Select
+                value={filters.department}
+                onChange={(e) =>
+                  setFilters({ ...filters, department: e.target.value })
+                }
+              >
+                <option value="">All departments</option>
+                {departments.map((d) => (
+                  <option key={d}>{d}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Status">
+              <Select
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters({ ...filters, status: e.target.value })
+                }
+              >
+                <option value="">All statuses</option>
+                {applicationStatuses.map((status) => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="From">
+              <Input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) =>
+                  setFilters({ ...filters, dateFrom: e.target.value })
+                }
+              />
+            </Field>
+            <Field label="To">
+              <Input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) =>
+                  setFilters({ ...filters, dateTo: e.target.value })
+                }
+              />
+            </Field>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {filtered.map((app) => (
+              <article
+                key={app.id}
+                className="rounded-lg border border-border bg-white p-4"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                  <div>
+                    <p className="font-bold text-ink">{app.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {app.appliedJob} ·{" "}
+                      {new Date(app.appliedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="grid gap-1 sm:w-48">
+                    <div className="relative">
+                      <Select className="pr-9" value={app.status} disabled={statusUpdates[app.id]?.loading} onChange={(e) => appStatus(app, e.target.value)} aria-label={`Status for ${app.name}`}>
+                        {applicationStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                      </Select>
+                      {statusUpdates[app.id]?.loading ? <Loader2 className="pointer-events-none absolute right-8 top-3.5 size-4 animate-spin text-primary" /> : null}
+                    </div>
+                    {statusUpdates[app.id]?.message ? <span className={`text-xs ${statusUpdates[app.id].error ? 'text-amber-700' : 'text-emerald-700'}`} role="status">{statusUpdates[app.id].message}</span> : null}
+                  </div>
+                </div>
+                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                  <p>
+                    <b>Email:</b> {app.email}
+                  </p>
+                  <p>
+                    <b>Phone:</b> {app.phone}
+                  </p>
+                  <p>
+                    <b>Experience:</b> {app.experience || "—"}
+                  </p>
+                  <p>
+                    <b>Portfolio:</b>{" "}
+                    {app.portfolio || app.linkedinProfile ? (
+                      <a
+                        className="break-all text-primary hover:underline"
+                        href={app.portfolio || app.linkedinProfile}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open link
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </p>
+                </div>
+                {app.coverLetter ? (
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    {app.coverLetter}
+                  </p>
+                ) : null}
+                {app.resumeAvailable ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openResume(app, false)}
+                    >
+                      <Eye className="size-4" />
+                      View Resume
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openResume(app, true)}
+                    >
+                      <Download className="size-4" />
+                      Download
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    No resume available.
+                  </p>
+                )}
+              </article>
+            ))}
+            {!filtered.length ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No applicants match these filters.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      )}
 
-    <Dialog open={Boolean(editing)} onOpenChange={(open) => !open && setEditing(null)} title={editing?.id ? 'Edit Job' : 'Add Job'} description="Manage the public opening and application requirements." className="sm:max-w-4xl">{editing ? <form onSubmit={save} className="grid gap-4"><div className="grid gap-4 sm:grid-cols-2"><Field label="Job Title *"><Input value={editing.title} onChange={(e) => change('title', e.target.value)} required /></Field><Field label="Department *"><Input value={editing.department} onChange={(e) => change('department', e.target.value)} required /></Field><Field label="Employment Type"><Select value={editing.employmentType} onChange={(e) => change('employmentType', e.target.value)}>{['full-time','part-time','contract','internship'].map((x) => <option key={x}>{x}</option>)}</Select></Field><Field label="Work Mode"><Select value={editing.workMode} onChange={(e) => change('workMode', e.target.value)}>{['on-site','remote','hybrid'].map((x) => <option key={x}>{x}</option>)}</Select></Field><Field label="Location"><Input value={editing.location} onChange={(e) => change('location', e.target.value)} /></Field><Field label="Experience Required"><Input value={editing.experienceRequired} onChange={(e) => change('experienceRequired', e.target.value)} /></Field><Field label="Salary Range"><Input value={editing.salaryRange} onChange={(e) => change('salaryRange', e.target.value)} /></Field><Field label="Number of Openings"><Input type="number" min="1" value={editing.numberOfOpenings} onChange={(e) => change('numberOfOpenings', e.target.value)} /></Field><Field label="Application Deadline"><Input type="date" value={editing.applicationDeadline?.slice?.(0,10) || ''} onChange={(e) => change('applicationDeadline', e.target.value)} /></Field><Field label="Display Order"><Input type="number" min="0" value={editing.displayOrder} onChange={(e) => change('displayOrder', e.target.value)} /></Field><Field label="Job Status"><Select value={editing.status} onChange={(e) => change('status', e.target.value)}>{['draft','open','closed','filled'].map((x) => <option key={x}>{x}</option>)}</Select></Field></div><Field label="Job Description *"><Textarea value={editing.description} onChange={(e) => change('description', e.target.value)} required /></Field>{[['responsibilities','Responsibilities'],['requirements','Requirements / Qualifications'],['skills','Skills'],['benefits','Benefits']].map(([key,label]) => <Field key={key} label={`${label} (one per line)`}><Textarea value={lines(editing[key])} onChange={(e) => change(key, e.target.value)} /></Field>)}<Button type="submit">Save Job</Button></form> : null}</Dialog>
-    <Dialog open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)} title={viewing?.title || 'Job'} description="Complete job posting details.">{viewing ? <div className="grid gap-4"><p className="text-sm leading-6 text-muted-foreground">{viewing.description}</p>{[['Responsibilities',viewing.responsibilities],['Requirements',viewing.requirements],['Skills',viewing.skills],['Benefits',viewing.benefits]].map(([label,items]) => <div key={label}><h3 className="font-bold text-ink">{label}</h3><ul className="mt-2 grid gap-1 text-sm text-muted-foreground">{items.map((x) => <li key={x}>— {x}</li>)}</ul></div>)}</div> : null}</Dialog>
-  </section>
+      <Dialog
+        open={Boolean(editing)}
+        onOpenChange={(open) => !open && setEditing(null)}
+        title={editing?.id ? "Edit Job" : "Add Job"}
+        description="Manage the public opening and application requirements."
+        className="sm:max-w-4xl"
+      >
+        {editing ? (
+          <form onSubmit={save} className="grid gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Job Title *">
+                <Input
+                  value={editing.title}
+                  onChange={(e) => change("title", e.target.value)}
+                  required
+                />
+              </Field>
+              <Field label="Department *">
+                <Input
+                  value={editing.department}
+                  onChange={(e) => change("department", e.target.value)}
+                  required
+                />
+              </Field>
+              <Field label="Employment Type">
+                <Select
+                  value={editing.employmentType}
+                  onChange={(e) => change("employmentType", e.target.value)}
+                >
+                  {["full-time", "part-time", "contract", "internship"].map(
+                    (x) => (
+                      <option key={x}>{x}</option>
+                    ),
+                  )}
+                </Select>
+              </Field>
+              <Field label="Work Mode">
+                <Select
+                  value={editing.workMode}
+                  onChange={(e) => change("workMode", e.target.value)}
+                >
+                  {["on-site", "remote", "hybrid"].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Location">
+                <Input
+                  value={editing.location}
+                  onChange={(e) => change("location", e.target.value)}
+                />
+              </Field>
+              <Field label="Experience Required">
+                <Input
+                  value={editing.experienceRequired}
+                  onChange={(e) => change("experienceRequired", e.target.value)}
+                />
+              </Field>
+              <Field label="Salary Range">
+                <Input
+                  value={editing.salaryRange}
+                  onChange={(e) => change("salaryRange", e.target.value)}
+                />
+              </Field>
+              <Field label="Number of Openings">
+                <Input
+                  type="number"
+                  min="1"
+                  value={editing.numberOfOpenings}
+                  onChange={(e) => change("numberOfOpenings", e.target.value)}
+                />
+              </Field>
+              <Field label="Application Deadline">
+                <Input
+                  type="date"
+                  value={editing.applicationDeadline?.slice?.(0, 10) || ""}
+                  onChange={(e) =>
+                    change("applicationDeadline", e.target.value)
+                  }
+                />
+              </Field>
+              <Field label="Display Order">
+                <Input
+                  type="number"
+                  min="0"
+                  value={editing.displayOrder}
+                  onChange={(e) => change("displayOrder", e.target.value)}
+                />
+              </Field>
+              <Field label="Job Status">
+                <Select
+                  value={editing.status}
+                  onChange={(e) => change("status", e.target.value)}
+                >
+                  {["draft", "open", "closed", "filled"].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            <Field label="Job Description *">
+              <Textarea
+                value={editing.description}
+                onChange={(e) => change("description", e.target.value)}
+                required
+              />
+            </Field>
+            {[
+              ["responsibilities", "Responsibilities"],
+              ["requirements", "Requirements / Qualifications"],
+              ["skills", "Skills"],
+              ["benefits", "Benefits"],
+            ].map(([key, label]) => (
+              <Field key={key} label={`${label} (one per line)`}>
+                <Textarea
+                  value={lines(editing[key])}
+                  onChange={(e) => change(key, e.target.value)}
+                />
+              </Field>
+            ))}
+            <Button type="submit">Save Job</Button>
+          </form>
+        ) : null}
+      </Dialog>
+      <Dialog
+        open={Boolean(viewing)}
+        onOpenChange={(open) => !open && setViewing(null)}
+        title={viewing?.title || "Job"}
+        description="Complete job posting details."
+      >
+        {viewing ? (
+          <div className="grid gap-4">
+            <p className="text-sm leading-6 text-muted-foreground">
+              {viewing.description}
+            </p>
+            {[
+              ["Responsibilities", viewing.responsibilities],
+              ["Requirements", viewing.requirements],
+              ["Skills", viewing.skills],
+              ["Benefits", viewing.benefits],
+            ].map(([label, items]) => (
+              <div key={label}>
+                <h3 className="font-bold text-ink">{label}</h3>
+                <ul className="mt-2 grid gap-1 text-sm text-muted-foreground">
+                  {items.map((x) => (
+                    <li key={x}>— {x}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </Dialog>
+    </section>
+  );
 }

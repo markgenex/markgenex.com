@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CheckCircle2, FileText, Loader2 } from 'lucide-react'
 import { submitJobApplication } from '../lib/api'
+import { trackEvent } from '../lib/tracking'
 import { Button } from './ui/button'
 import { Dialog } from './ui/dialog'
 import { Field, Input, Textarea } from './ui/field'
@@ -25,7 +26,7 @@ export function JobApplicationForm({ job, onClose }) {
     if (values.portfolio) { try { const url = new URL(values.portfolio); if (!['http:', 'https:'].includes(url.protocol)) throw new Error() } catch { next.portfolio = 'Enter a full link beginning with http:// or https://.' } }
     setErrors(next); return !Object.keys(next).length
   }
-  async function submit(event) { event.preventDefault(); if (!validate()) return; setSubmitting(true); setErrors({}); try { setResult(await submitJobApplication(job.id, values)) } catch (error) { setErrors({ form: error.message }) } finally { setSubmitting(false) } }
+  async function submit(event) { event.preventDefault(); if (!validate()) return; setSubmitting(true); setErrors({}); try { const response = await submitJobApplication(job.id, values); setResult(response); trackEvent('job_application', { jobId: job.id, jobTitle: job.title }) } catch (error) { setErrors({ form: error.message }) } finally { setSubmitting(false) } }
   return <Dialog open onOpenChange={(open) => !open && onClose()} title={result ? 'Application received' : `Apply for ${job.title}`} description={result ? 'Thank you for your interest in joining MarkGenExes.' : `Job ID: ${job.id} · ${job.department || 'Open position'}`} className="sm:max-w-3xl">
     {result ? <div className="grid place-items-center py-6 text-center" role="status"><span className="grid size-14 place-items-center rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 className="size-7" /></span><h3 className="mt-4 text-xl font-bold text-ink">Successfully submitted</h3><p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">{result.message}</p><Button className="mt-6 w-full sm:w-auto" onClick={onClose}>Done</Button></div> : <form onSubmit={submit} noValidate className="grid gap-4">
       <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-sm"><b>Applied role:</b> {job.title}<span className="mt-1 block text-xs text-muted-foreground">The role and Job ID are attached automatically.</span></div>

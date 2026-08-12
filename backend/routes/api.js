@@ -3,6 +3,8 @@ import multer from "multer";
 import { LeadController } from "../controllers/leads/LeadController.js";
 import { IndustryController } from "../controllers/cms/IndustryController.js";
 import { CareerController } from "../controllers/careers/CareerController.js";
+import { TrackingController } from "../controllers/analytics/TrackingController.js";
+import { CaseStudyController } from "../controllers/cms/CaseStudyController.js";
 import { isAuthenticated } from "../middlewares/auth/tokenMiddleware.js";
 
 const router = express.Router();
@@ -18,6 +20,8 @@ const acceptResume = (req, res, next) => resumeUpload.single("resume")(req, res,
   if (error) return res.status(400).json({ error: error.code === "LIMIT_FILE_SIZE" ? "Resume must be 5 MB or smaller" : error.message });
   return next();
 });
+const imageUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1 }, fileFilter(req, file, callback) { callback(/^image\/(jpeg|png|webp|gif)$/.test(file.mimetype) ? null : new Error("Image must be JPEG, PNG, WebP, or GIF"), /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype)); } });
+const acceptImage = (req, res, next) => imageUpload.single("image")(req, res, (error) => error ? res.status(400).json({ error: error.code === "LIMIT_FILE_SIZE" ? "Image must be 8 MB or smaller" : error.message }) : next());
 
 router.get("/", (req, res) => {
   res.json({ message: "API is working" });
@@ -29,9 +33,21 @@ router.post("/v1/public/consultations", LeadController.publicConsultation);
 router.post("/v1/public/service-enquiries", LeadController.publicServiceEnquiry);
 router.get("/v1/public/industries", IndustryController.publicList);
 router.get("/v1/public/jobs", CareerController.publicJobs);
+router.get("/v1/public/case-studies", CaseStudyController.publicList);
+router.get("/v1/public/case-study-images/:id", CaseStudyController.image);
+router.get("/v1/public/tracking", TrackingController.publicConfig);
+router.post("/v1/public/tracking/events", TrackingController.collect);
 router.post("/v1/public/jobs/:id/applications", acceptResume, CareerController.apply);
 
 router.get("/v1/admin/jobs", isAuthenticated, CareerController.adminJobs);
+router.get("/v1/admin/case-studies", isAuthenticated, CaseStudyController.adminList);
+router.post("/v1/admin/case-studies", isAuthenticated, CaseStudyController.create);
+router.patch("/v1/admin/case-studies/:id", isAuthenticated, CaseStudyController.update);
+router.delete("/v1/admin/case-studies/:id", isAuthenticated, CaseStudyController.remove);
+router.post("/v1/admin/case-studies/images", isAuthenticated, acceptImage, CaseStudyController.upload);
+router.get("/v1/admin/tracking", isAuthenticated, TrackingController.adminConfig);
+router.put("/v1/admin/tracking", isAuthenticated, TrackingController.updateConfig);
+router.get("/v1/admin/tracking/report", isAuthenticated, TrackingController.report);
 router.post("/v1/admin/jobs", isAuthenticated, CareerController.createJob);
 router.patch("/v1/admin/jobs/:id", isAuthenticated, CareerController.updateJob);
 router.delete("/v1/admin/jobs/:id", isAuthenticated, CareerController.deleteJob);

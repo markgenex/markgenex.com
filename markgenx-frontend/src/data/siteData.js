@@ -16,6 +16,7 @@ import {
 export const navItems = [
   { label: 'Services', href: '/services' },
   { label: 'Industries', href: '/industries' },
+  { label: 'Case Studies', href: '/case-studies' },
   { label: 'Consulting', href: '/consultation' },
   { label: 'Careers', href: '/careers' },
   { label: 'Partner', href: '/partner' },

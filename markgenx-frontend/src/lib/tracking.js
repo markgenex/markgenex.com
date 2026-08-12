@@ -1,0 +1,30 @@
+import { getPublicTracking, recordTrackingEvent } from './api'
+
+const VISITOR_KEY = 'markgenx:visitor_id'
+const SESSION_KEY = 'markgenx:session_id'
+let config = null
+let initialized = false
+let lastPageEvent = { key: '', at: 0 }
+const identifier = (key) => { let value = sessionStorage.getItem(key) || localStorage.getItem(key); if (!value) value = crypto.randomUUID(); key === SESSION_KEY ? sessionStorage.setItem(key, value) : localStorage.setItem(key, value); return value }
+const attribution = () => { const params = new URLSearchParams(location.search); return { utm: { source: params.get('utm_source') || '', medium: params.get('utm_medium') || '', campaign: params.get('utm_campaign') || '', term: params.get('utm_term') || '', content: params.get('utm_content') || '' }, gclid: params.get('gclid') || '', fbclid: params.get('fbclid') || '' } }
+function script(id, src) { if (document.getElementById(id)) return; const element = document.createElement('script'); element.id = id; element.async = true; element.src = src; document.head.appendChild(element) }
+export async function initializeTracking() {
+  if (initialized) return config || {}
+  initialized = true
+  try { config = await getPublicTracking() } catch { config = {} }
+  if (config.googleAnalyticsEnabled && config.googleAnalyticsId) { window.dataLayer = window.dataLayer || []; window.gtag = window.gtag || function gtag(){ window.dataLayer.push(arguments) }; window.gtag('js', new Date()); window.gtag('config', config.googleAnalyticsId, { send_page_view: false }); script('markgenx-ga4', `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(config.googleAnalyticsId)}`) }
+  if (config.facebookPixelEnabled && config.facebookPixelId) { window.fbq = window.fbq || function fbq(){ window.fbq.callMethod ? window.fbq.callMethod(...arguments) : window.fbq.queue.push(arguments) }; window.fbq.queue = window.fbq.queue || []; window.fbq.loaded = true; window.fbq.version = '2.0'; window.fbq('init', config.facebookPixelId); script('markgenx-meta', 'https://connect.facebook.net/en_US/fbevents.js') }
+  if (!window.__markgenxTrackingListener) { window.__markgenxTrackingListener = true; window.addEventListener('markgenx:conversion', (event) => trackEvent(event.detail.eventName, event.detail.properties)) }
+  return config
+}
+export async function trackEvent(eventName, properties = {}) {
+  const active = config || await initializeTracking()
+  const conversion = eventName !== 'page_view'
+  if (eventName === 'page_view' && active.trackPageViews === false) return
+  if (conversion && active.trackConversions === false) return
+  if (eventName === 'page_view') { const key = `${location.pathname}${location.search}`; if (lastPageEvent.key === key && Date.now() - lastPageEvent.at < 1000) return; lastPageEvent = { key, at: Date.now() } }
+  const payload = { eventName, pagePath: `${location.pathname}${location.search}`, referrer: document.referrer, language: navigator.language, anonymousId: identifier(VISITOR_KEY), sessionId: identifier(SESSION_KEY), ...attribution(), ...properties }
+  if (active.firstPartyEnabled !== false) recordTrackingEvent(payload).catch(() => {})
+  if (active.googleAnalyticsEnabled && window.gtag) window.gtag('event', eventName, properties)
+  if (active.facebookPixelEnabled && window.fbq) window.fbq('track', conversion ? 'Lead' : 'PageView', properties)
+}

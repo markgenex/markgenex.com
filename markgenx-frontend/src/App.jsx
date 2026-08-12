@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
+import { Link, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import {
   Activity,
   ArrowRight,
   ArrowUpRight,
-  BarChart3,
   Building2,
   CalendarCheck,
   Check,
@@ -55,6 +54,10 @@ import { ServiceDiscussionForm } from './components/ServiceDiscussionForm'
 import { IndustryManager } from './components/IndustryManager'
 import { CareerManager } from './components/CareerManager'
 import { JobApplicationForm } from './components/JobApplicationForm'
+import { TrackingManager } from './components/TrackingManager'
+import { CaseStudiesPage } from './components/CaseStudiesPage'
+import { CaseStudyManager } from './components/CaseStudyManager'
+import { initializeTracking, trackEvent } from './lib/tracking'
 
 const phoneNumber = '+919876543210'
 const whatsappUrl = `https://wa.me/919876543210?text=${encodeURIComponent(
@@ -65,12 +68,14 @@ const industryIconMap = { Building2, Code2, Factory, GraduationCap, HeartPulse, 
 function Layout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <TrackingObserver />
       <Header />
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/industries" element={<IndustriesPage />} />
+          <Route path="/case-studies" element={<CaseStudiesPage />} />
           <Route path="/consultation" element={<ConsultationPage />} />
           <Route path="/careers" element={<CareersPage />} />
           <Route path="/partner" element={<PartnerPage />} />
@@ -90,6 +95,12 @@ function Layout() {
       <FloatingActions />
     </div>
   )
+}
+
+function TrackingObserver() {
+  const location = useLocation()
+  useEffect(() => { initializeTracking().then(() => trackEvent('page_view')).catch(() => {}) }, [location.pathname, location.search])
+  return null
 }
 
 function Header() {
@@ -116,8 +127,8 @@ function Header() {
               to={item.href}
               className={({ isActive }) =>
                 cn(
-                  'relative rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-ink',
-                  isActive && 'bg-muted text-ink after:absolute after:inset-x-3 after:-bottom-3.5 after:h-0.5 after:rounded-full after:bg-primary',
+                  'relative px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink',
+                  isActive && 'text-ink after:absolute after:inset-x-3 after:-bottom-3.5 after:h-0.5 after:rounded-full after:bg-primary',
                 )
               }
             >
@@ -128,8 +139,8 @@ function Header() {
             to={isAuthenticated ? '/admin' : '/login'}
             className={({ isActive }) =>
               cn(
-                'relative rounded-md px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-ink',
-                isActive && 'bg-muted text-ink after:absolute after:inset-x-3 after:-bottom-3.5 after:h-0.5 after:rounded-full after:bg-primary',
+                'relative px-3 py-2 text-sm font-semibold text-muted-foreground transition hover:text-ink',
+                isActive && 'text-ink after:absolute after:inset-x-3 after:-bottom-3.5 after:h-0.5 after:rounded-full after:bg-primary',
               )
             }
           >
@@ -1324,6 +1335,7 @@ function AdminDashboard() {
         </section>
 
         <IndustryManager />
+        <CaseStudyManager />
         <CareerManager />
       </div>
 
@@ -1336,17 +1348,7 @@ function AdminDashboard() {
             ))}
           </div>
         </section>
-        <section className="surface-card rounded-lg p-5">
-          <h2 className="text-xl font-bold text-ink">Tracking integrations</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {['Google Analytics', 'Conversion tracking', 'Meta Pixel', 'UTM campaigns'].map((item) => (
-              <div key={item} className="flex items-center gap-2 rounded-md border border-border bg-white p-3 text-sm font-semibold text-ink transition hover:border-primary/30 hover:bg-muted">
-                <BarChart3 className="size-4 text-primary" />
-                {item}
-              </div>
-            ))}
-          </div>
-        </section>
+        <TrackingManager />
       </div>
 
       <Dialog

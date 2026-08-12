@@ -53,8 +53,8 @@ const careerApplicationSchema = new mongoose.Schema(
     githubProfile: String,
     status: {
       type: String,
-      enum: ["new", "reviewed", "shortlisted", "interview", "selected", "rejected", "withdrawn"],
-      default: "new",
+      enum: ["New", "Reviewed", "Shortlisted", "Interview", "Selected", "Rejected"],
+      default: "New",
     },
     rating: {
       type: Number,
