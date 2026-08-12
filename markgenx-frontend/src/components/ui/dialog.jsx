@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { Button } from './button'
 import { cn } from '../../lib/utils'
@@ -23,9 +24,9 @@ export function Dialog({ open, onOpenChange, title, description, children, class
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[70] grid place-items-end bg-ink/55 p-3 backdrop-blur-sm sm:place-items-center"
+      className="fixed inset-0 z-[100] grid place-items-end overflow-hidden bg-ink/55 p-3 backdrop-blur-sm sm:place-items-center sm:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={title}
@@ -33,7 +34,7 @@ export function Dialog({ open, onOpenChange, title, description, children, class
         if (event.target === event.currentTarget) onOpenChange(false)
       }}
     >
-      <div className={cn('animate-rise max-h-[92vh] w-full overflow-auto rounded-lg bg-white shadow-premium sm:max-w-2xl', className)}>
+      <div className={cn('animate-rise max-h-[calc(100dvh-1.5rem)] w-full overflow-y-auto overscroll-contain rounded-lg bg-white shadow-premium sm:max-h-[calc(100dvh-3rem)] sm:max-w-2xl', className)}>
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-white/95 p-5 backdrop-blur">
           <div>
             <h2 className="text-xl font-black text-ink">{title}</h2>
@@ -45,6 +46,7 @@ export function Dialog({ open, onOpenChange, title, description, children, class
         </div>
         <div className="p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

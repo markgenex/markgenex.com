@@ -54,6 +54,7 @@ import { LeadForm } from './components/LeadForm'
 import { ServiceDiscussionForm } from './components/ServiceDiscussionForm'
 import { IndustryManager } from './components/IndustryManager'
 import { CareerManager } from './components/CareerManager'
+import { JobApplicationForm } from './components/JobApplicationForm'
 
 const phoneNumber = '+919876543210'
 const whatsappUrl = `https://wa.me/919876543210?text=${encodeURIComponent(
@@ -614,6 +615,7 @@ function ConsultationPage() {
 function CareersPage() {
   const [openRole, setOpenRole] = useState('senior-performance-marketing-manager')
   const [jobs, setJobs] = useState([])
+  const [applyingFor, setApplyingFor] = useState(null)
   const benefits = [
     { title: 'Remote-first', description: 'Work from anywhere in India. We have been distributed since 2020 and we mean it.', icon: House },
     { title: 'Learning budget', description: '₹40,000/year for courses, conferences, and books — no approval gauntlet.', icon: GraduationCap },
@@ -623,11 +625,11 @@ function CareersPage() {
     { title: 'Growth path', description: 'Quarterly career conversations and a transparent promotion framework.', icon: TrendingUp },
   ]
   useEffect(() => { getPublicJobs().then((items) => { setJobs(items); if (items.length) setOpenRole(items[0].id) }).catch(() => setJobs([])) }, [])
-  const applicationEmail = (roleName) => {
+  /* Legacy email application flow intentionally replaced by the role-bound form.
     const subject = `Job Application – ${roleName}`
     const body = ['Hello MarkGenexes Hiring Team,', '', `I would like to apply for the ${roleName} role.`, '', 'Name:', 'Phone Number:', 'Experience:', 'Resume / Portfolio Link:', 'Message:', '', 'Thank you,'].join('\n')
     return `mailto:careers@markgenexs.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  }
+  } */
 
   return (
     <PageShell
@@ -720,10 +722,10 @@ function CareersPage() {
                 {expanded ? (
                   <div id={`career-${job.id}`} className="animate-enter border-t border-border px-4 pb-5 pt-4 sm:px-5">
                     <p className="max-w-4xl text-sm leading-7 text-muted-foreground sm:text-base">{job.description}</p>
-                    <a className={cn(buttonVariants(), 'mt-5 w-full sm:w-auto')} href={applicationEmail(job.title)}>
+                    <Button className="mt-5 w-full sm:w-auto" onClick={() => setApplyingFor(job)}>
                       Apply for this role
                       <ArrowRight className="size-4" />
-                    </a>
+                    </Button>
                   </div>
                 ) : null}
               </article>
@@ -731,7 +733,7 @@ function CareersPage() {
           })}
         </div>
       </section>
-
+      <JobApplicationForm key={applyingFor?.id || 'closed'} job={applyingFor} onClose={() => setApplyingFor(null)} />
 
     </PageShell>
   )

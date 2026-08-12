@@ -1,4 +1,7 @@
 import mongoose from "mongoose";
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import { ApplicationActivity, CareerApplication, JobOpening, Site } from "../../models/index.js";
@@ -47,7 +50,17 @@ function jobPayload(body, current = {}) {
 }
 
 function jobJson(job) { return { id: String(job._id), title: job.title, slug: job.slug, department: job.department || "", employmentType: job.employmentType, workMode: job.workMode, location: job.location || "", experienceRequired: job.experienceRequired || "", salaryRange: job.salaryRange || "", description: job.description, shortDescription: job.shortDescription || job.description, responsibilities: job.responsibilities || [], requirements: job.qualifications || [], skills: job.skills || [], benefits: job.benefits || [], numberOfOpenings: job.numberOfOpenings, applicationDeadline: job.applicationDeadline, displayOrder: job.displayOrder, status: job.status, applicationCount: job.applicationCount, createdAt: job.createdAt, updatedAt: job.updatedAt }; }
-function applicationJson(app) { const job = app.jobOpening || {}; const message = app.coverLetter || app.emailMessage || ""; return { id: String(app._id), jobId: job._id ? String(job._id) : String(app.jobOpening), appliedJob: job.title || "", department: job.department || "", name: `${app.firstName} ${app.lastName}`.trim(), firstName: app.firstName, lastName: app.lastName, email: app.email, phone: app.phone || "", resumeData: app.resumeData || "", resumeFileName: app.resumeFileName || "", portfolio: app.portfolio || "", linkedinProfile: app.linkedinProfile || "", experience: app.experience || "", coverLetter: app.emailSubject ? `Subject: ${app.emailSubject}\n\n${message}` : message, subject: app.emailSubject || "", source: app.source || "website", attachments: app.emailAttachments || [], status: app.status, appliedAt: app.appliedAt || app.createdAt }; }
+function applicationJson(app) { const job = app.jobOpening || {}; const message = app.coverLetter || app.emailMessage || ""; return { id: String(app._id), jobId: job._id ? String(job._id) : String(app.jobOpening), appliedJob: job.title || "", department: job.department || "", name: `${app.firstName} ${app.lastName}`.trim(), firstName: app.firstName, lastName: app.lastName, email: app.email, phone: app.phone || "", resumeAvailable: Boolean(app.resumeStorageName || app.resumeData), resumeFileName: app.resumeFileName || "", portfolio: app.portfolio || "", linkedinProfile: app.linkedinProfile || "", experience: app.experience || "", coverLetter: app.emailSubject ? `Subject: ${app.emailSubject}\n\n${message}` : message, subject: app.emailSubject || "", source: app.source || "website", attachments: app.emailAttachments || [], status: app.status, appliedAt: app.appliedAt || app.createdAt }; }
+
+const resumeDirectory = path.resolve(process.cwd(), "private_uploads", "resumes");
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const allowedResumeTypes = new Set(["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"]);
+function hasValidResumeSignature(file) {
+  if (!file?.buffer?.length) return false;
+  if (file.mimetype === "application/pdf") return file.buffer.subarray(0, 5).toString() === "%PDF-";
+  if (file.mimetype === "application/msword") return file.buffer.subarray(0, 8).equals(Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]));
+  return file.buffer.subarray(0, 2).toString() === "PK";
+}
 
 export class CareerController {
   static async publicJobs(req, res) { try { const site = await getSite(); if (!site) return res.json({ jobs: [] }); await migrate(site); const jobs = await JobOpening.find({ site: site._id, status: "open", $or: [{ applicationDeadline: null }, { applicationDeadline: { $gte: new Date() } }] }).sort({ displayOrder: 1 }); return res.json({ jobs: jobs.map(jobJson) }); } catch (e) { return res.status(500).json({ error: "Failed to fetch jobs", details: e.message }); } }
@@ -55,7 +68,36 @@ export class CareerController {
   static async createJob(req, res) { try { const site = await getSite(); const payload = jobPayload(req.body); const job = await JobOpening.create({ site: site._id, postedBy: req.user.id, ...payload, ...(payload.status === "open" ? { publishedAt: new Date() } : {}) }); return res.status(201).json({ job: jobJson(job) }); } catch (e) { return res.status(400).json({ error: "Failed to create job", details: e.message }); } }
   static async updateJob(req, res) { try { if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid job ID" }); const job = await JobOpening.findById(req.params.id); if (!job) return res.status(404).json({ error: "Job not found" }); const payload = jobPayload(req.body, job.toObject()); Object.assign(job, payload); if (payload.status === "open" && !job.publishedAt) job.publishedAt = new Date(); if (["closed", "filled"].includes(payload.status)) job.closedAt = new Date(); await job.save(); return res.json({ job: jobJson(job) }); } catch (e) { return res.status(400).json({ error: "Failed to update job", details: e.message }); } }
   static async deleteJob(req, res) { try { const count = await CareerApplication.countDocuments({ jobOpening: req.params.id }); if (count) return res.status(409).json({ error: "Jobs with applicants cannot be deleted; close the job instead" }); const job = await JobOpening.findByIdAndDelete(req.params.id); if (!job) return res.status(404).json({ error: "Job not found" }); return res.json({ message: "Job deleted" }); } catch (e) { return res.status(500).json({ error: "Failed to delete job", details: e.message }); } }
-  static async apply(req, res) { try { if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid job ID" }); const job = await JobOpening.findOne({ _id: req.params.id, status: "open" }); if (!job) return res.status(404).json({ error: "This job is not accepting applications" }); const body = req.body || {}; if (!body.firstName || !body.lastName || !body.email || !body.phone) return res.status(400).json({ error: "Name, email, and phone are required" }); if (!body.resumeData && !body.portfolio) return res.status(400).json({ error: "A resume or portfolio link is required" }); if (body.resumeData && !/^data:application\/pdf;base64,/i.test(body.resumeData)) return res.status(400).json({ error: "Resume must be a PDF" }); const app = await CareerApplication.create({ jobOpening: job._id, firstName: String(body.firstName).trim(), lastName: String(body.lastName).trim(), email: String(body.email).trim().toLowerCase(), phone: String(body.phone).trim(), experience: String(body.experience || "").trim(), coverLetter: String(body.coverLetter || "").trim(), portfolio: String(body.portfolio || "").trim(), resumeData: body.resumeData || "", resumeFileName: String(body.resumeFileName || ""), status: "new", appliedAt: new Date() }); await JobOpening.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } }); return res.status(201).json({ message: "Application submitted", application: applicationJson(await app.populate("jobOpening")) }); } catch (e) { return res.status(400).json({ error: "Failed to submit application", details: e.message }); } }
+  static async apply(req, res) {
+    let storedPath;
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid job ID" });
+      const job = await JobOpening.findOne({ _id: req.params.id, status: "open", $or: [{ applicationDeadline: null }, { applicationDeadline: { $gte: new Date() } }] });
+      if (!job) return res.status(404).json({ error: "This job is not accepting applications" });
+      const body = req.body || {};
+      const fullName = String(body.fullName || "").trim().replace(/\s+/g, " ");
+      const email = String(body.email || "").trim().toLowerCase();
+      const phone = String(body.phone || "").trim();
+      const experience = String(body.experience || "").trim();
+      const portfolio = String(body.portfolio || "").trim();
+      if (fullName.length < 2 || !emailPattern.test(email) || phone.length < 7 || !experience) return res.status(400).json({ error: "Please provide a valid name, email, phone number, and experience" });
+      if (!req.file || !allowedResumeTypes.has(req.file.mimetype) || !hasValidResumeSignature(req.file)) return res.status(400).json({ error: "Please upload a valid PDF, DOC, or DOCX resume" });
+      if (portfolio) { try { const url = new URL(portfolio); if (!["http:", "https:"].includes(url.protocol)) throw new Error(); } catch { return res.status(400).json({ error: "Portfolio link must be a valid http(s) URL" }); } }
+      const parts = fullName.split(" ");
+      const extension = req.file.mimetype === "application/pdf" ? ".pdf" : req.file.mimetype === "application/msword" ? ".doc" : ".docx";
+      const storageName = `${crypto.randomUUID()}${extension}`;
+      await fs.mkdir(resumeDirectory, { recursive: true });
+      storedPath = path.join(resumeDirectory, storageName);
+      await fs.writeFile(storedPath, req.file.buffer, { flag: "wx", mode: 0o600 });
+      const app = await CareerApplication.create({ jobOpening: job._id, firstName: parts[0], lastName: parts.slice(1).join(" ") || "-", email, phone, experience, portfolio, resumeStorageName: storageName, resumeFileName: path.basename(req.file.originalname), resumeMimeType: req.file.mimetype, resumeSize: req.file.size, status: "new", appliedAt: new Date() });
+      await JobOpening.updateOne({ _id: job._id }, { $inc: { applicationCount: 1 } });
+      return res.status(201).json({ message: `Your application for ${job.title} was submitted successfully.`, applicationId: String(app._id) });
+    } catch (e) {
+      if (storedPath) await fs.unlink(storedPath).catch(() => {});
+      return res.status(400).json({ error: "Failed to submit application", details: e.message });
+    }
+  }
+  static async resume(req, res) { try { const app = await CareerApplication.findById(req.params.id); if (!app) return res.status(404).json({ error: "Application not found" }); if (app.resumeStorageName) { const filePath = path.join(resumeDirectory, path.basename(app.resumeStorageName)); const disposition = req.query.download === "1" ? "attachment" : "inline"; res.setHeader("Content-Type", app.resumeMimeType || "application/octet-stream"); res.setHeader("Content-Disposition", `${disposition}; filename*=UTF-8''${encodeURIComponent(app.resumeFileName || "resume")}`); return res.sendFile(filePath); } if (app.resumeData) { const match = app.resumeData.match(/^data:([^;]+);base64,(.+)$/); if (!match) return res.status(404).json({ error: "Resume is unavailable" }); res.setHeader("Content-Type", match[1]); res.setHeader("Content-Disposition", `${req.query.download === "1" ? "attachment" : "inline"}; filename*=UTF-8''${encodeURIComponent(app.resumeFileName || "resume.pdf")}`); return res.send(Buffer.from(match[2], "base64")); } return res.status(404).json({ error: "Resume is unavailable" }); } catch (e) { return res.status(400).json({ error: "Failed to retrieve resume", details: e.message }); } }
   static async syncMailbox(req, res) {
     const { CAREERS_IMAP_HOST: host, CAREERS_IMAP_PORT: port, CAREERS_IMAP_USER: user, CAREERS_IMAP_PASSWORD: pass, CAREERS_IMAP_SECURE: secure } = process.env;
     if (!host || !user || !pass) return res.status(503).json({ error: "Careers mailbox sync is not configured" });
