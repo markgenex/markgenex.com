@@ -15,6 +15,6 @@ const caseStudySchema = new mongoose.Schema({
   publishedAt: Date,
 }, { timestamps: true, collection: "case_studies" });
 
-caseStudySchema.index({ site: 1, slug: 1 }, { unique: true });
+caseStudySchema.index({ site: 1, slug: 1 });
 caseStudySchema.index({ site: 1, status: 1, displayOrder: 1 });
 export default mongoose.model("CaseStudy", caseStudySchema);
