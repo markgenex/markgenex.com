@@ -5,6 +5,7 @@ import { IndustryController } from "../controllers/cms/IndustryController.js";
 import { CareerController } from "../controllers/careers/CareerController.js";
 import { TrackingController } from "../controllers/analytics/TrackingController.js";
 import { CaseStudyController } from "../controllers/cms/CaseStudyController.js";
+import { TestimonialController } from "../controllers/cms/TestimonialController.js";
 import { PartnerContentController } from "../controllers/partnerships/PartnerContentController.js";
 import { isAuthenticated } from "../middlewares/auth/tokenMiddleware.js";
 
@@ -36,6 +37,7 @@ router.get("/v1/public/industries", IndustryController.publicList);
 router.get("/v1/public/jobs", CareerController.publicJobs);
 router.get("/v1/public/case-studies", CaseStudyController.publicList);
 router.get("/v1/public/partners", PartnerContentController.publicList);
+router.get("/v1/public/testimonials", TestimonialController.publicList);
 router.get("/v1/public/case-study-images/:id", CaseStudyController.image);
 router.get("/v1/public/tracking", TrackingController.publicConfig);
 router.post("/v1/public/tracking/events", TrackingController.collect);
@@ -78,6 +80,12 @@ router.patch("/v1/admin/leads/:id/assign", isAuthenticated, LeadController.assig
 router.post("/v1/admin/leads/:id/activities", isAuthenticated, LeadController.addActivity);
 router.post("/v1/admin/leads/:id/tasks", isAuthenticated, LeadController.addTask);
 router.get("/v1/admin/leads/:id/timeline", isAuthenticated, LeadController.timeline);
+
+// Testimonials admin
+router.get("/v1/admin/testimonials", isAuthenticated, TestimonialController.adminList);
+router.post("/v1/admin/testimonials", isAuthenticated, TestimonialController.create);
+router.patch("/v1/admin/testimonials/:id", isAuthenticated, TestimonialController.update);
+router.delete("/v1/admin/testimonials/:id", isAuthenticated, TestimonialController.remove);
 
 router.post("/leads", LeadController.create);
 router.post("/forms/contact-enquiries", LeadController.create);
