@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Badge } from './ui/badge'
-import { getPublicPartners } from '../lib/api'
+import { getPublicTestimonials } from '../lib/api'
 
 export function TestimonialsPage() {
   const [items, setItems] = useState([])
@@ -8,17 +8,11 @@ export function TestimonialsPage() {
 
   useEffect(() => {
     let mounted = true
-    getPublicPartners()
-      .then((partners) => {
+    getPublicTestimonials()
+      .then((testimonials) => {
         if (!mounted) return
-        if (Array.isArray(partners) && partners.length) {
-          const testimonials = partners
-            .filter((p) => p.testimonial || p.quote)
-            .map((p, i) => ({ id: p.id || p._id || `partner-${i}`, name: p.name || p.company || 'Partner', title: p.title || p.role || p.industry || '', quote: p.testimonial || p.quote }))
-          setItems(testimonials.length ? testimonials : sampleFallback())
-        } else {
-          setItems(sampleFallback())
-        }
+        if (Array.isArray(testimonials) && testimonials.length) setItems(testimonials)
+        else setItems(sampleFallback())
       })
       .catch(() => setItems(sampleFallback()))
       .finally(() => mounted && setLoading(false))
