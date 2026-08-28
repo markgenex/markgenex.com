@@ -29,7 +29,7 @@ export function CaseStudiesPage() {
     <>
       <section className="bg-[linear-gradient(120deg,var(--color-dark-navy),#123b79)] text-white">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
-          <p className="text-sm font-bold uppercase tracking-[0.16em] text-emerald-300">
+          <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary-light)]">
             Case Studies & Portfolio
           </p>
           <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl lg:text-6xl">
