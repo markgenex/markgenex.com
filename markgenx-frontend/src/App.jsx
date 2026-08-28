@@ -183,23 +183,15 @@ function Header({ onOpenApplication }) {
           </NavLink>
         </nav>
 
-        <div className="hidden items-center gap-2 lg:flex">
+        <div className="hidden items-center gap-3 lg:flex">
           <a className={buttonVariants({ variant: 'outline', size: 'sm' })} href={whatsappUrl} target="_blank" rel="noreferrer">
             <Users className="size-4" />
-            WhatsApp
+            Talk to an Expert
           </a>
-          <button
-            type="button"
-            className={buttonVariants({ variant: 'outline', size: 'sm' })}
-            onClick={() => onOpenApplication?.('BOOK_FREE_CALL')}
-          >
+          <Button variant="default" size="sm" onClick={() => onOpenApplication?.('BOOK_FREE_CALL')}>
             <CalendarCheck className="size-4" />
-            Book a Free Call
-          </button>
-          <button type="button" className={buttonVariants({ size: 'sm' })} onClick={() => onOpenApplication?.('APPLY_NOW')}>
-            <ArrowUpRight className="size-4" />
-            Apply Now
-          </button>
+            Book a Consultation
+          </Button>
         </div>
 
         <button
@@ -228,8 +220,8 @@ function Header({ onOpenApplication }) {
               </NavLink>
             ))}
             <button className={cn(buttonVariants(), 'mt-2')} onClick={() => { onOpenApplication?.('APPLY_NOW'); setOpen(false) }}>
-                Start Your Growth Journey
-              </button>
+              Start Your Growth Journey
+            </button>
           </nav>
         </div>
       ) : null}
@@ -243,7 +235,7 @@ function HomePage() {
       <section className="relative overflow-hidden border-b border-border hero-gradient">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28">
           <div className="animate-enter flex flex-col justify-center">
-            <Badge className="w-fit border-emerald-200 bg-emerald-50 text-emerald-800">
+            <Badge className="w-fit border-[var(--primary-light)/20] bg-[var(--background-purple)] text-[var(--primary-dark)]">
               <Sparkles className="size-3.5" />
               Marketing, technology, and growth consulting
             </Badge>

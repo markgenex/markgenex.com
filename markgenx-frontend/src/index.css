@@ -1,24 +1,43 @@
 @import "tailwindcss";
 
 @theme {
-  --color-background: #F8FAFC;
-  --color-foreground: #1E293B;
-  --color-ink: #0F172A;
-  --color-primary: #2563EB;
-  --color-primary-dark: #1D4ED8;
-  --color-primary-foreground: #FFFFFF;
-  --color-secondary: #7C3AED;
-  --color-accent: #06B6D4;
-  --color-dark-navy: #0F172A;
-  --color-text-secondary: #64748B;
-  --color-white: #FFFFFF;
-  --color-success: #16A34A;
-  --color-muted: #F1F5F9;
-  --color-border: #E6EEF9;
-  --color-ring: rgba(37, 99, 235, 0.16);
+  --primary: #6D28D9;
+  --primary-light: #8B5CF6;
+  --primary-electric: #7C3AED;
+  --primary-dark: #4C1D95;
+
+  --background: #FFFFFF;
+  --background-soft: #F8FAFC;
+  --background-purple: #F5F3FF;
+
+  --foreground: #111827;
+  --foreground-muted: #64748B;
+  --dark: #0B1020;
+
+  --border: #E5E7EB;
+  --white: #FFFFFF;
+
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --danger: #DC2626;
+
+  --ring: rgba(109,40,217,0.14);
   --shadow-soft: 0 10px 30px rgba(2, 6, 23, 0.06);
   --shadow-premium: 0 30px 90px rgba(2, 6, 23, 0.12);
   --font-sans: Inter, ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* Legacy compatibility */
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-foreground: var(--white);
+  --color-secondary: var(--primary-electric);
+  --color-dark-navy: var(--dark);
+  --color-text-secondary: var(--foreground-muted);
+  --color-white: var(--white);
+  --color-success: var(--success);
+  --color-muted: var(--background-soft);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
 }
 
 * {
@@ -53,7 +72,7 @@ a {
 }
 
 ::selection {
-  background: rgba(20, 108, 95, 0.18);
+  background: rgba(109, 40, 217, 0.12);
 }
 
 .surface-card {
@@ -72,7 +91,7 @@ a {
 
 .interactive-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(20, 108, 95, 0.32);
+  border-color: rgba(109, 40, 217, 0.14);
   box-shadow: 0 20px 60px rgba(16, 24, 40, 0.12);
 }
 
@@ -103,8 +122,8 @@ a {
 }
 
 .hero-gradient {
-  background: linear-gradient(135deg, var(--color-primary) 0%, #4F46E5 50%, var(--color-secondary) 100%);
-  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--primary-electric) 50%, var(--primary-light) 100%);
+  color: var(--white);
 }
 
 .hero-title {
