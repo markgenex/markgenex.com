@@ -148,9 +148,7 @@ function Header({ onOpenApplication }) {
     <header className="sticky top-0 z-40 border-b border-border/80 bg-white/88 shadow-sm shadow-slate-950/[0.03] backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3" aria-label="MarkGenexes home">
-          <span className="grid size-10 place-items-center rounded-md bg-gradient-to-br from-[var(--color-primary)] via-[#4F46E5] to-[var(--color-secondary)] text-sm font-black text-white shadow-lg">
-            MG
-          </span>
+          <img src="/images/logo.svg" alt="MarkGenexes" className="h-10 w-10 rounded-md" />
           <span className="leading-tight">
             <span className="block text-base font-bold text-ink">MarkGenexes</span>
             <span className="block text-xs font-semibold text-muted-foreground">Growth systems studio</span>
