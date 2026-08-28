@@ -57,8 +57,12 @@ import { CareerManager } from './components/CareerManager'
 import { JobApplicationForm } from './components/JobApplicationForm'
 import { TrackingManager } from './components/TrackingManager'
 import { CaseStudiesPage } from './components/CaseStudiesPage'
+import { BlogPage } from './components/BlogPage'
+import { TestimonialsPage } from './components/TestimonialsPage'
+import { BlogPostPage } from './components/BlogPostPage'
 import { CaseStudyManager } from './components/CaseStudyManager'
 import { PartnerManager } from './components/PartnerManager'
+import { TestimonialsManager } from './components/TestimonialsManager'
 import { initializeTracking, trackEvent } from './lib/tracking'
 
 const phoneNumber = '+919876543210'
@@ -68,16 +72,47 @@ const whatsappUrl = `https://wa.me/919876543210?text=${encodeURIComponent(
 const industryIconMap = { Building2, Code2, Factory, GraduationCap, HeartPulse, Hotel, House, Landmark, ShoppingBag }
 
 function Layout() {
+  const [appModalOpen, setAppModalOpen] = useState(false)
+  const [appLeadSource, setAppLeadSource] = useState(null)
+
+  function openApplicationModal(source) {
+    setAppLeadSource(source)
+    setAppModalOpen(true)
+  }
+
+  useEffect(() => {
+    function onOpenApplication(event) {
+      const source = event?.detail?.source || 'APPLY_NOW'
+      openApplicationModal(source)
+    }
+    window.addEventListener('open:application', onOpenApplication)
+    return () => window.removeEventListener('open:application', onOpenApplication)
+  }, [])
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <TrackingObserver />
-      <Header />
+      <Header onOpenApplication={openApplicationModal} />
+      <Dialog
+        open={appModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setAppModalOpen(false)
+        }}
+        title={appLeadSource === 'APPLY_NOW' ? 'Apply Now' : 'Book a Free Call'}
+        description="Complete the application to get started"
+        className="sm:max-w-3xl"
+      >
+        <LeadForm type="consultation" title="Apply" defaultLeadSource={appLeadSource} />
+      </Dialog>
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/industries" element={<IndustriesPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:id" element={<BlogPostPage />} />
           <Route path="/case-studies" element={<CaseStudiesPage />} />
+          <Route path="/testimonials" element={<TestimonialsPage />} />
           <Route path="/consultation" element={<ConsultationPage />} />
           <Route path="/careers" element={<CareersPage />} />
           <Route path="/partner" element={<PartnerPage />} />
@@ -105,7 +140,7 @@ function TrackingObserver() {
   return null
 }
 
-function Header() {
+function Header({ onOpenApplication }) {
   const [open, setOpen] = useState(false)
   const { isAuthenticated } = useAuth()
 
@@ -113,7 +148,7 @@ function Header() {
     <header className="sticky top-0 z-40 border-b border-border/80 bg-white/88 shadow-sm shadow-slate-950/[0.03] backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3" aria-label="MarkGenexes home">
-          <span className="grid size-10 place-items-center rounded-md bg-[linear-gradient(135deg,#101828,#146c5f)] text-sm font-black text-white shadow-lg shadow-primary/20">
+          <span className="grid size-10 place-items-center rounded-md bg-gradient-to-br from-[var(--color-primary)] via-[#4F46E5] to-[var(--color-secondary)] text-sm font-black text-white shadow-lg">
             MG
           </span>
           <span className="leading-tight">
@@ -153,12 +188,20 @@ function Header() {
         <div className="hidden items-center gap-2 lg:flex">
           <a className={buttonVariants({ variant: 'outline', size: 'sm' })} href={whatsappUrl} target="_blank" rel="noreferrer">
             <Users className="size-4" />
-            Talk to an Expert
+            WhatsApp
           </a>
-          <Link className={buttonVariants({ size: 'sm' })} to="/consultation">
+          <button
+            type="button"
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+            onClick={() => onOpenApplication?.('BOOK_FREE_CALL')}
+          >
             <CalendarCheck className="size-4" />
-            Book a Consultation
-          </Link>
+            Book a Free Call
+          </button>
+          <button type="button" className={buttonVariants({ size: 'sm' })} onClick={() => onOpenApplication?.('APPLY_NOW')}>
+            <ArrowUpRight className="size-4" />
+            Apply Now
+          </button>
         </div>
 
         <button
@@ -186,9 +229,9 @@ function Header() {
                 {item.label}
               </NavLink>
             ))}
-            <Link className={cn(buttonVariants(), 'mt-2')} to="/consultation" onClick={() => setOpen(false)}>
-              Start Your Growth Journey
-            </Link>
+            <button className={cn(buttonVariants(), 'mt-2')} onClick={() => { onOpenApplication?.('APPLY_NOW'); setOpen(false) }}>
+                Start Your Growth Journey
+              </button>
           </nav>
         </div>
       ) : null}
@@ -199,28 +242,33 @@ function Header() {
 function HomePage() {
   return (
     <>
-      <section className="grid-pattern relative overflow-hidden border-b border-border bg-[radial-gradient(circle_at_80%_16%,rgba(59,130,246,0.12),transparent_25rem),radial-gradient(circle_at_15%_18%,rgba(245,158,11,0.13),transparent_22rem),linear-gradient(135deg,#fff_0%,#f7faf9_48%,#edf7f3_100%)]">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 md:py-16 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
+      <section className="relative overflow-hidden border-b border-border hero-gradient">
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28">
           <div className="animate-enter flex flex-col justify-center">
             <Badge className="w-fit border-emerald-200 bg-emerald-50 text-emerald-800">
               <Sparkles className="size-3.5" />
               Marketing, technology, and growth consulting
             </Badge>
             <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight text-ink sm:text-5xl lg:text-6xl">
-              MarkGenexes builds lead generation systems for ambitious businesses.
+              We build predictable lead engines that scale revenue.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-              Digital marketing, performance marketing, lead generation, branding, development, SEO, social, AI automation,
-              and business consulting in one accountable growth partner.
+              Measurable growth through data-driven marketing, funnel design, and automation — aligned to your sales process.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link className={buttonVariants({ size: 'lg' })} to="/consultation">
-                Book a Consultation
+              <button
+                className={buttonVariants({ size: 'lg' })}
+                onClick={() => window.dispatchEvent(new CustomEvent('open:application', { detail: { source: 'APPLY_NOW' } }))}
+              >
+                Apply Now
                 <ArrowRight className="size-5" />
-              </Link>
-              <a className={buttonVariants({ variant: 'outline', size: 'lg' })} href={whatsappUrl} target="_blank" rel="noreferrer">
-                Talk to an Expert
-              </a>
+              </button>
+              <button
+                className={buttonVariants({ variant: 'outline', size: 'lg' })}
+                onClick={() => window.dispatchEvent(new CustomEvent('open:application', { detail: { source: 'BOOK_FREE_CALL' } }))}
+              >
+                Book a Free Call
+              </button>
             </div>
             <div className="mt-8 grid grid-cols-3 gap-3 text-left">
               {[
@@ -273,21 +321,21 @@ function HomePage() {
 
 function TrustStrip() {
   return (
-    <section className="border-b border-border bg-white/80">
-      <div className="mx-auto grid max-w-7xl gap-3 px-4 py-4 sm:px-6 md:grid-cols-4 lg:px-8">
+    <section className="border-b border-border bg-[linear-gradient(180deg,var(--color-background),rgba(255,255,255,0.9))]">
+      <div className="mx-auto grid max-w-7xl gap-4 px-4 py-6 sm:px-6 md:grid-cols-4 lg:px-8">
         {[
           [Gauge, 'Performance-first', 'Campaigns mapped to measurable outcomes'],
           [MailCheck, 'Lead handoff ready', 'Sales notifications and acknowledgement flows'],
           [LineChart, 'Tracking native', 'UTM, GA, conversion, and pixel hooks'],
           [ShieldCheck, 'Admin controlled', 'Role-aware publishing and operations'],
         ].map(([Icon, title, text]) => (
-          <div key={title} className="flex items-start gap-3 rounded-md p-3 transition hover:bg-muted">
-            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+          <div key={title} className="surface-card interactive-card flex items-start gap-3 rounded-lg p-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-md bg-gradient-to-tr from-primary/10 to-secondary/10 text-primary transition-all">
               <Icon className="size-4" />
             </span>
             <div>
               <p className="text-sm font-bold text-ink">{title}</p>
-              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{text}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{text}</p>
             </div>
           </div>
         ))}
@@ -311,7 +359,7 @@ function ServiceOverview() {
           return (
             <article key={service.slug} className="group surface-card interactive-card rounded-lg p-5">
               <div className="flex items-start gap-4">
-                <span className="grid size-11 shrink-0 place-items-center rounded-md bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-white">
+                <span className="grid size-11 shrink-0 place-items-center rounded-md bg-gradient-to-tr from-primary/10 to-secondary/10 text-primary transition group-hover:from-primary group-hover:to-secondary group-hover:text-white">
                   <Icon className="size-5" />
                 </span>
                 <div>
@@ -415,11 +463,11 @@ function ServicesPage() {
               return (
                 <article key={service.slug} className="surface-card interactive-card flex flex-col rounded-lg p-5">
                   <div className="flex flex-1 gap-4">
-                    <span className="grid size-11 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                    <span className="grid size-11 shrink-0 place-items-center rounded-md bg-gradient-to-tr from-primary/10 to-secondary/10 text-primary">
                       <Icon className="size-5" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <h2 className="text-xl font-bold text-ink">{service.title}</h2>
+                      <h2 className="text-xl font-extrabold text-ink">{service.title}</h2>
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">{service.description}</p>
                     </div>
                   </div>
@@ -515,8 +563,8 @@ function IndustriesPage() {
                     </>
                   ) : null}
                   <div className="relative z-[1] flex items-center justify-between gap-3">
-                    <Badge className="border-white/15 bg-white/10 text-white">{industry.industryNumber || String(index + 1).padStart(2, '0')}</Badge>
-                    <span className="grid size-11 place-items-center rounded-md bg-white/10 text-accent backdrop-blur-sm">
+                    <Badge className="border-primary/15 bg-primary/6 text-white">{industry.industryNumber || String(index + 1).padStart(2, '0')}</Badge>
+                    <span className="grid size-11 place-items-center rounded-md bg-gradient-to-tr from-primary/10 to-secondary/10 text-white backdrop-blur-sm">
                       <Icon className="size-6" />
                     </span>
                   </div>
@@ -541,7 +589,7 @@ function IndustriesPage() {
                       <ul className="mt-3 grid gap-3">
                         {industry.challenges.map((challenge, challengeIndex) => (
                           <li key={challenge.text || challenge || challengeIndex} className="flex items-start gap-2 text-sm leading-6 text-ink">
-                            <ArrowRight className="mt-1 size-4 shrink-0 text-accent" />
+                            <ArrowRight className="mt-1 size-4 shrink-0 text-primary" />
                             <span>{challenge.text || challenge}</span>
                           </li>
                         ))}
@@ -558,7 +606,7 @@ function IndustriesPage() {
                               outcome.highlighted === false ? 'text-ink' : 'font-bold text-primary',
                             )}
                           >
-                            {outcome.highlighted === false ? <ArrowRight className="mt-1 size-4 shrink-0 text-accent" /> : <Check className="mt-1 size-4 shrink-0" />}
+                            {outcome.highlighted === false ? <ArrowRight className="mt-1 size-4 shrink-0 text-primary" /> : <Check className="mt-1 size-4 shrink-0" />}
                             <span>{outcome.text || outcome}</span>
                           </li>
                         ))}
@@ -606,8 +654,8 @@ function ConsultationPage() {
         <div className="grid gap-4">
           {['Growth audit', 'Channel plan', 'Lead routing', 'AI automation map'].map((item, index) => (
             <div key={item} className="surface-card interactive-card rounded-lg p-5">
-              <p className="inline-flex rounded-md bg-primary/10 px-2 py-1 text-sm font-black text-primary">0{index + 1}</p>
-              <h2 className="mt-2 text-xl font-bold text-ink">{item}</h2>
+              <p className="inline-flex rounded-md bg-gradient-to-tr from-primary/10 to-secondary/10 px-2 py-1 text-sm font-extrabold text-primary">0{index + 1}</p>
+              <h2 className="mt-2 text-xl font-extrabold text-ink">{item}</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
                 A practical session focused on acquisition, conversion, sales handoff, and measurable next actions.
               </p>
@@ -762,8 +810,10 @@ function PartnerPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {loadingPartners ? <div className="surface-card grid min-h-40 place-items-center rounded-lg"><Loader2 className="size-6 animate-spin text-primary" /></div> : partnerError ? <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{partnerError}</div> : partners.map((item) => (
             <div key={item.id} className="surface-card interactive-card rounded-lg p-5">
-              <Users className="size-5 text-primary" />
-              <h2 className="mt-3 text-xl font-bold text-ink">{item.name}</h2>
+              <span className="grid size-11 place-items-center rounded-md bg-gradient-to-tr from-primary/10 to-secondary/10 text-primary">
+                <Users className="size-5" />
+              </span>
+              <h2 className="mt-3 text-xl font-extrabold text-ink">{item.name}</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
             </div>
           ))}{!loadingPartners && !partnerError && !partners.length ? <div className="surface-card rounded-lg p-5 text-sm text-muted-foreground sm:col-span-2 lg:col-span-3">No partner programs are currently published.</div> : null}
@@ -1160,6 +1210,8 @@ function AdminDashboard() {
         )}
       </section>
 
+      <TestimonialsManager />
+
       <div className="mt-6 grid gap-6">
         <section className="surface-card min-w-0 rounded-lg p-4 sm:p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1414,39 +1466,39 @@ function FloatingActions() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border bg-white pb-20 md:pb-0">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <div className="surface-card min-w-0 rounded-lg border border-border p-5 shadow-soft sm:p-6 lg:p-8">
+    <footer className="bg-[var(--color-dark-navy)] text-[var(--color-white)] pb-20 md:pb-0">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-14 lg:px-8">
+        <div className="min-w-0 rounded-lg p-5 sm:p-6 lg:p-8">
           <div className="grid min-w-0 gap-8 sm:grid-cols-2 lg:grid-cols-[1.8fr_0.8fr_0.8fr_0.75fr_1fr] lg:gap-7">
             <div className="min-w-0 sm:col-span-2 lg:col-span-1">
               <div className="flex items-center gap-3">
-                <span className="grid size-11 shrink-0 place-items-center rounded-md bg-primary text-lg font-black text-white">M<sup className="text-xs">•</sup></span>
-                <p className="text-xl font-black text-ink">Markgenexs Solutions</p>
+                <span className="grid size-11 shrink-0 place-items-center rounded-md bg-gradient-to-br from-[var(--color-primary)] via-[#4F46E5] to-[var(--color-secondary)] text-lg font-black text-white">MG</span>
+                <p className="text-xl font-black text-[var(--color-white)]">MarkGenexes</p>
               </div>
-              <p className="mt-5 max-w-sm text-sm leading-7 text-muted-foreground">
+              <p className="mt-5 max-w-sm text-sm leading-7 text-[var(--color-text-secondary)]">
                 A full-service marketing agency helping brands grow through data-driven strategy, creative storytelling, and digital innovation.
               </p>
               <div className="mt-5 flex flex-wrap gap-3" aria-label="Social media links">
                 {[['IN', 'LinkedIn'], ['X', 'X'], ['F', 'Facebook'], ['IG', 'Instagram']].map(([short, label]) => (
-                  <a key={label} href="#" aria-label={label} className="grid size-11 place-items-center rounded-full bg-muted text-xs font-black text-ink transition hover:bg-primary hover:text-white">{short}</a>
+                  <a key={label} href="#" aria-label={label} className="grid size-11 place-items-center rounded-full bg-[rgba(255,255,255,0.06)] text-xs font-bold text-[var(--color-white)] transition hover:bg-[var(--color-primary)] hover:text-white">{short}</a>
                 ))}
               </div>
             </div>
-            <FooterColumn title="Company" links={[["About Us", "/"], ["Case Studies", "/case-studies"], ["Careers", "/careers"], ["Blog / Insights", "#"], ["Contact Us", "/consultation"]]} />
-            <FooterColumn title="Services" links={[["Brand Strategy", "/services"], ["Digital Marketing", "/services"], ["Content & SEO", "/services"], ["Paid Media", "/services"], ["Web & Design", "/services"]]} />
-            <FooterColumn title="Legal" links={[["Privacy Policy", "#"], ["Terms & Conditions", "#"]]} />
+            <FooterColumn title="Company" links={[["About Us", "/"], ["Case Studies", "/case-studies"], ["Careers", "/careers"], ["Blog / Insights", "#"], ["Contact Us", "/consultation"]]} dark />
+            <FooterColumn title="Services" links={[["Brand Strategy", "/services"], ["Digital Marketing", "/services"], ["Content & SEO", "/services"], ["Paid Media", "/services"], ["Web & Design", "/services"]]} dark />
+            <FooterColumn title="Legal" links={[["Privacy Policy", "#"], ["Terms & Conditions", "#"]]} dark />
             <div className="min-w-0">
               <h2 className="text-sm font-black uppercase tracking-wide text-ink">Get in touch</h2>
-              <div className="mt-4 grid gap-3 text-sm leading-6 text-muted-foreground">
-                <a className="break-all transition hover:text-ink" href="mailto:hello@markgenexs.com">hello@markgenexs.com</a>
-                <a className="transition hover:text-ink" href="tel:+918045678900">+91 80 4567 8900</a>
+              <div className="mt-4 grid gap-3 text-sm leading-6 text-[var(--color-text-secondary)]">
+                <a className="break-all transition hover:text-[var(--color-white)]" href="mailto:hello@markgenexes.com">hello@markgenexes.com</a>
+                <a className="transition hover:text-[var(--color-white)]" href="tel:+918045678900">+91 80 4567 8900</a>
                 <address className="not-italic">Prestige Tech Park,<br />Bangalore 560103</address>
               </div>
             </div>
           </div>
-          <div className="mt-8 flex flex-col gap-4 border-t border-border pt-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:text-sm">
-            <p>© 2026 Markgenexs Solutions Pvt Ltd. All rights reserved.</p>
-            <div className="flex gap-6"><a href="#" className="hover:text-ink">Privacy</a><a href="#" className="hover:text-ink">Terms</a></div>
+          <div className="mt-8 flex flex-col gap-4 pt-5 text-xs text-[var(--color-text-secondary)] sm:flex-row sm:items-center sm:justify-between sm:text-sm">
+            <p>© 2026 MarkGenexes Solutions Pvt Ltd. All rights reserved.</p>
+            <div className="flex gap-6"><a href="#" className="hover:text-[var(--color-white)]">Privacy</a><a href="#" className="hover:text-[var(--color-white)]">Terms</a></div>
           </div>
         </div>
       </div>
@@ -1454,8 +1506,25 @@ function Footer() {
   )
 }
 
-function FooterColumn({ title, links }) {
-  return <div className="min-w-0"><h2 className="text-sm font-black uppercase tracking-wide text-ink">{title}</h2><div className="mt-4 grid gap-3">{links.map(([label, href]) => href.startsWith('/') ? <Link key={label} className="text-sm text-muted-foreground transition hover:text-ink" to={href}>{label}</Link> : <a key={label} className="text-sm text-muted-foreground transition hover:text-ink" href={href}>{label}</a>)}</div></div>
+function FooterColumn({ title, links, dark = false }) {
+  return (
+    <div className="min-w-0">
+      <h2 className={cn('text-sm font-black uppercase tracking-wide', dark ? 'text-[var(--color-white)]' : 'text-ink')}>{title}</h2>
+      <div className="mt-4 grid gap-3">
+        {links.map(([label, href]) =>
+          href.startsWith('/') ? (
+            <Link key={label} className={cn('text-sm transition', dark ? 'text-[var(--color-text-secondary)] hover:text-[var(--color-white)]' : 'text-muted-foreground transition hover:text-ink')} to={href}>
+              {label}
+            </Link>
+          ) : (
+            <a key={label} className={cn('text-sm transition', dark ? 'text-[var(--color-text-secondary)] hover:text-[var(--color-white)]' : 'text-muted-foreground transition hover:text-ink')} href={href}>
+              {label}
+            </a>
+          ),
+        )}
+      </div>
+    </div>
+  )
 }
 
 function NotFound() {

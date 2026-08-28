@@ -205,7 +205,20 @@ function trackLeadConversion(lead) {
   window.dispatchEvent(new CustomEvent('markgenx:conversion', { detail: { eventName: lead.type === 'consultation' ? 'consultation_booking' : lead.type === 'service' ? 'service_enquiry' : 'lead_submission', properties: { leadType: lead.type, requiredService: lead.requiredService } } }))
 }
 
+const IS_DEV = import.meta.env.DEV
+
 async function request(path, options = {}) {
+  // Dev-only mock: short-circuit POSTs to form/lead endpoints so the frontend
+  // can be tested without a running backend or DB connectivity.
+  if (
+    IS_DEV &&
+    (options.method || 'GET').toUpperCase() === 'POST' &&
+    /forms|leads|applications|enquiries/.test(path)
+  ) {
+    await new Promise((r) => setTimeout(r, 250))
+    return { lead: options.body, success: true }
+  }
+
   const { data } = await apiClient.request({
     url: path,
     method: options.method || 'GET',

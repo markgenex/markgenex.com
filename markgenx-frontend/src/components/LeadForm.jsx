@@ -18,7 +18,7 @@ const initialValues = {
   message: '',
 }
 
-export function LeadForm({ type = 'contact', title = 'Talk to an Expert', submitLabel = 'Request a Proposal', compact = false }) {
+export function LeadForm({ type = 'contact', title = 'Talk to an Expert', submitLabel = 'Request a Proposal', compact = false, defaultLeadSource = undefined }) {
   const [values, setValues] = useState(initialValues)
   const [status, setStatus] = useState('idle')
   const [message, setMessage] = useState('')
@@ -33,7 +33,9 @@ export function LeadForm({ type = 'contact', title = 'Talk to an Expert', submit
     setMessage('')
 
     try {
-      const result = await submitLead(type, values)
+      const payload = { ...values }
+      if (defaultLeadSource) payload.leadSource = defaultLeadSource
+      const result = await submitLead(type, payload)
       setStatus('success')
       setValues(initialValues)
       setMessage(

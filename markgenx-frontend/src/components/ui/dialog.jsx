@@ -34,7 +34,7 @@ export function Dialog({ open, onOpenChange, title, description, children, class
         if (event.target === event.currentTarget) onOpenChange(false)
       }}
     >
-      <div className={cn('animate-rise max-h-[calc(100dvh-1.5rem)] w-full overflow-y-auto overscroll-contain rounded-lg bg-white shadow-premium sm:max-h-[calc(100dvh-3rem)] sm:max-w-2xl', className)}>
+      <div className={cn('animate-rise max-h-[calc(100dvh-1.5rem)] w-full overflow-y-auto overscroll-contain rounded-lg bg-white shadow-premium sm:max-h-[calc(100dvh-3rem)] sm:max-w-3xl', className)}>
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-white/95 p-5 backdrop-blur">
           <div>
             <h2 className="text-xl font-black text-ink">{title}</h2>

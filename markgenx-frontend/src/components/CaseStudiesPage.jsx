@@ -27,17 +27,16 @@ export function CaseStudiesPage() {
     filter === "All" ? items : items.filter((x) => x.industry === filter);
   return (
     <>
-      <section className="bg-[linear-gradient(120deg,#08152b,#123b79)] text-white">
+      <section className="bg-[linear-gradient(120deg,var(--color-dark-navy),#123b79)] text-white">
         <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
           <p className="text-sm font-bold uppercase tracking-[0.16em] text-emerald-300">
             Case Studies & Portfolio
           </p>
-          <h1 className="mt-5 text-4xl font-black sm:text-6xl">
+          <h1 className="mt-5 text-4xl font-extrabold sm:text-5xl lg:text-6xl">
             Proof, not promises.
           </h1>
-          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-200 sm:text-xl">
-            Real outcomes for real clients. Explore the work we are proudest
-            of—with the numbers to back it up.
+          <p className="mt-5 max-w-2xl text-lg leading-7 text-slate-200 sm:text-xl">
+            Real outcomes for real clients. Explore the work we are proudest of — with the numbers to back it up.
           </p>
         </div>
       </section>
@@ -78,15 +77,16 @@ export function CaseStudiesPage() {
                   className="surface-card interactive-card group overflow-hidden rounded-xl"
                 >
                   <div className="relative aspect-[16/9] overflow-hidden bg-muted">
-                    <img
-                      src={item.bannerImage}
-                      alt={item.title}
-                      className="size-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                    />
-                  <Badge className="absolute left-4 top-4 border-0 bg-ink/85 text-white">
-                      {item.industry}
-                    </Badge>
-                  </div>
+                      <img
+                        src={item.bannerImage}
+                        alt={item.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                      />
+                    <Badge className="absolute left-4 top-4 border-0 bg-gradient-to-tr from-primary/70 to-secondary/60 text-white">
+                        {item.industry}
+                      </Badge>
+                    </div>
                   <div className="p-5 sm:p-7">
                     <p className="text-sm font-black uppercase tracking-wide text-primary">
                       {item.clientName}
